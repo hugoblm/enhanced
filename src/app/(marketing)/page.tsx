@@ -30,11 +30,11 @@ export default function LandingPage() {
     <>
       <Header />
 
-      <main className="flex flex-1 flex-col justify-center px-8 pb-20 pt-10">
+      <main className="flex flex-1 flex-col justify-center px-4 pb-20 pt-10 md:px-8">
         <div className="mx-auto w-full max-w-[740px]">
           <EyebrowPill />
 
-          <h1 className="mb-7 font-heading text-[56px] font-semibold leading-[60px] tracking-[-2px] text-foreground text-balance whitespace-pre-line md:text-[56px]">
+          <h1 className="mb-7 font-heading text-4xl font-semibold leading-[44px] tracking-[-1.2px] text-foreground text-balance whitespace-pre-line md:text-[56px] md:leading-[60px] md:tracking-[-2px]">
             {"Pitche ton idée produit.\nOn la transforme en draft PRD challengé."}
           </h1>
 
@@ -52,7 +52,7 @@ export default function LandingPage() {
 
 function Header() {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-4 px-8">
+    <header className="flex h-16 shrink-0 items-center gap-4 px-4 md:px-8">
       <a href="#" className="inline-flex items-center gap-2 no-underline">
         <Image src="/mark.svg" width={24} height={24} alt="" />
         <span className="font-heading text-base font-semibold tracking-[-0.4px] text-foreground">
@@ -149,7 +149,7 @@ function PublicDrafts() {
             <span className="font-sans text-sm text-foreground">
               {draft.title}
             </span>
-            <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+            <span className="ml-auto hidden font-mono text-[11px] text-muted-foreground sm:inline">
               {draft.meta}
             </span>
             <ArrowRight size={12} className="shrink-0 text-muted-foreground" />
@@ -162,7 +162,7 @@ function PublicDrafts() {
 
 function Footer() {
   return (
-    <footer className="border-t border-secondary px-8 py-6 text-center font-mono text-[11px] text-muted-foreground">
+    <footer className="border-t border-secondary px-4 py-6 text-center font-mono text-[11px] text-muted-foreground md:px-8">
       enhanced.pm · pour les équipes qui veulent builder moins de mauvaises
       features
     </footer>

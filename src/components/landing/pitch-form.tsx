@@ -62,16 +62,16 @@ export function PitchForm() {
             className="w-full resize-none border-none bg-transparent px-[22px] pb-3 pt-5 font-sans text-lg leading-7 text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
 
-          <div className="flex items-center gap-2 border-t border-secondary px-3.5 pb-3.5 pt-2.5">
+          <div className="flex flex-wrap items-center gap-2 border-t border-secondary px-3.5 pb-3.5 pt-2.5">
             <button
               type="button"
               disabled
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-white px-3 font-ui text-[13px] font-medium text-[#525252] disabled:opacity-50"
+              className="hidden h-9 items-center gap-1.5 rounded-full border border-border bg-white px-3 font-ui text-[13px] font-medium text-[#525252] disabled:opacity-50 md:inline-flex"
             >
               <Mic size={14} strokeWidth={1.75} />
               ou enregistre une note vocale
             </button>
-            <span className="font-mono text-[11.5px] text-muted-foreground">
+            <span className="hidden font-mono text-[11.5px] text-muted-foreground md:inline">
               Sans compte. Tu ne signes qu&apos;après la première reformulation.
             </span>
             <div className="flex-1" />
