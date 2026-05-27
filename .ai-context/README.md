@@ -5,62 +5,99 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: \<date\> against branch `\<branch\>`._
+> _Last verified: 2026-05-27 against branch `staging`._
 
 ---
 
 ## File Map
 
-As the codebase grows, add one file per domain and register it here. Keep each file concise and
-keyword-rich so an agent can find the right one fast.
-
 | File | Scope | Keywords |
 |------|-------|----------|
 | `README.md` | Navigation + cross-cutting invariants | **always read first** |
-| _`<domain>.md`_ | _TO BE FILLED — e.g. `auth.md`, `data-model.md`, `api.md`_ | _searchable terms_ |
+| `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Supabase, Vercel, OpenRouter, Tailwind |
 
-<!-- Example rows, for reference (delete once real domains exist):
-| `auth.md`       | Login, sessions, tokens, permissions | OAuth, JWT, session, RBAC, guards |
-| `data-model.md` | Schema, migrations, entities         | tables, migrations, relations, indexes |
-| `api.md`        | Endpoints, contracts, validation     | routes, DTOs, Zod, errors, pagination |
--->
+---
+
+## Current Architecture
+
+```
+Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
+                ↕
+          OpenRouter (AI, future)
+                ↕
+          MCP servers (PostHog/Mixpanel/Amplitude, future)
+```
+
+**Status: Scaffolded, no features implemented.**
+
+### What exists
+- Next.js 16 App Router with TypeScript strict
+- Supabase client (browser + server + middleware) — Magic Link auth configured, no tables yet
+- shadcn/ui initialized (Button component only)
+- Zustand, Zod, React Hook Form, Vercel AI SDK, react-markdown installed but not used
+- Single page: `/` (landing placeholder)
+- Middleware: Supabase session refresh on every request
+
+### What does NOT exist yet
+- No database tables / migrations / RLS policies
+- No authentication flow (login page, auth callback)
+- No wizard UI
+- No AI integration (prompts, tool calling)
+- No MCP connections
+- No PostHog tracking setup
+
+---
+
+## Routes
+
+| Route | Type | Auth | Description |
+|-------|------|------|-------------|
+| `/` | Page (SSG) | Public | Landing placeholder |
+
+---
+
+## Environment Variables
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` + Vercel | Supabase project endpoint |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env.local` + Vercel | Supabase anonymous JWT (public, RLS-protected) |
+
+Both are `NEXT_PUBLIC_` — safe to expose. The `service_role` key is NOT stored anywhere in the codebase.
 
 ---
 
 ## Cross-Cutting Invariants
 
-These are **coupling points**: places where two parts of the system must agree. Breaking one
-side without updating the other causes bugs that are hard to trace. Document each one as it
-appears, in this exact shape:
+> **Invariant — Supabase env vars must match across local and Vercel**
+> - **What:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` must be identical in `.env.local`, Vercel Production, and Vercel Preview (staging branch).
+> - **Where:** `.env.local`, Vercel env vars (Production + Preview/staging).
+> - **Breaks if:** they differ → auth fails silently, API calls go to wrong project or return 401.
 
-> **Invariant — \<short name\>**
-> - **What:** the rule that must hold.
-> - **Where:** every file/place that participates.
-> - **Breaks if:** what goes wrong when the sides drift apart.
+> **Invariant — Middleware must refresh Supabase session**
+> - **What:** `src/middleware.ts` calls `updateSession()` on every request to keep the auth cookie fresh.
+> - **Where:** `src/middleware.ts` → `src/lib/supabase/middleware.ts`.
+> - **Breaks if:** middleware is removed or bypassed → session expires mid-navigation, user gets logged out randomly.
 
-<!-- TO BE FILLED. Real examples to model yours on:
+> **Invariant — .ai-context must be updated in every commit that changes code**
+> - **What:** Any commit that modifies routes, data flows, modules, services, or invariants must include matching `.ai-context/` updates.
+> - **Where:** This directory.
+> - **Breaks if:** skipped → next agent works from stale context → regressions.
 
-> **Invariant — Shared secret between services**
-> - **What:** `INTERNAL_API_SECRET` is identical in service A and service B.
-> - **Where:** `service-a/.env`, `service-b/.env`.
-> - **Breaks if:** they differ → service-to-service calls 401.
+---
 
-> **Invariant — Schema version**
-> - **What:** bump the local DB schema version on every table/index change; never reuse a number.
-> - **Where:** `lib/db.ts` (version constant) + migration files.
-> - **Breaks if:** version not bumped → clients keep a stale schema, writes fail silently.
+## Deploy
 
-> **Invariant — Plan/limits defined in one place**
-> - **What:** plan limits are authored once and consumed everywhere.
-> - **Where:** `config/plans.ts` (source of truth) + any UI/feature gate that reads them.
-> - **Breaks if:** a limit is hard-coded elsewhere → UI and backend disagree on entitlements.
--->
+| Environment | Branch | Domain | Trigger |
+|-------------|--------|--------|---------|
+| Production | `main` | `enhanced.pm` | Push to `main` |
+| Staging | `staging` | `staging.enhanced.pm` (pending DNS) | Push to `staging` |
+
+Deploys are automatic via Vercel GitHub integration. No GitHub Actions workflow.
 
 ---
 
 ## Maintenance Rules
-
-Keeping this directory true is part of the work, not an afterthought:
 
 - **After changing a data flow** → update the matching domain file.
 - **After adding/removing a module, route, service, or tool** → update the relevant domain file
@@ -68,12 +105,3 @@ Keeping this directory true is part of the work, not an afterthought:
 - **After changing a cross-cutting invariant** → update the Invariants section here.
 - **Verify, don't assume** — when you touch a domain, re-read its file and correct anything that
   no longer matches the code. Update the `Last verified` date at the top.
-
----
-
-## Why this exists (for newcomers)
-
-An agent (or a new engineer) that reads `CLAUDE.md` then this file should be able to make a safe
-change without re-deriving the whole system. The goal is **fewer regressions**: most bugs from
-AI-assisted changes come from breaking an invariant nobody wrote down. Writing them down here is
-the fix.

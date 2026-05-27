@@ -176,21 +176,32 @@ See `docs/initiative/README.md` for the exact structure every initiative/feature
 
 ## AI Context Documentation
 
-> **MANDATORY:** Before starting ANY plan, implementation, or non-trivial change, read
-> `.ai-context/README.md` first, then the relevant domain file(s). Do this automatically,
-> without waiting to be asked. Skipping it leads to regressions and broken invariants.
+> **NON-NEGOTIABLE.** `.ai-context/` is the primary context for all AI development agents.
+> Violations of these rules produce regressions, stale docs, and broken invariants.
 
-The `.ai-context/` directory holds concise documentation of the **current code state**, written
-for AI agents. `README.md` is the navigation map plus the cross-cutting invariants (coupling
-points that, if broken on one side without the other, cause bugs). Each additional file (added
-as the codebase grows) covers one domain.
+The `.ai-context/` directory documents the **current code state** — what the code actually does
+today and which invariants break if you touch the wrong thing. `README.md` is the navigation
+map + cross-cutting invariants. Each additional file covers one domain.
 
-### Maintenance Rules
-- **After changing a data flow** → update the matching `.ai-context/*.md`.
-- **After adding/removing a module, route, service, or tool** → update the relevant domain file.
-- **After changing a cross-service invariant** → update `.ai-context/README.md`.
+### Before ANY development
+- **READ** `.ai-context/README.md` first, then the relevant domain file(s).
+- Do this automatically, without waiting to be asked. No exceptions.
+
+### Before ANY commit
+- **VERIFY** that `.ai-context/` still matches the code you changed.
+- If your changes affect a data flow, module, route, service, tool, or invariant → **update
+  the matching `.ai-context/*.md` in the same commit**. Not after. Not later. Same commit.
+
+### Before ANY push
+- **RE-READ** every `.ai-context/` file you touched and confirm it reflects the actual code.
+- `.ai-context/` must **always** be up to date on every pushed commit. A stale `.ai-context/`
+  on a pushed branch is a bug.
+
+### General rules
+- When code and `.ai-context/` disagree → the code is right. Fix the doc immediately.
 - **Relation to `docs/`** — `docs/` = intent & history (specs, planning). `.ai-context/` =
-  current reality. For *implementation* context, prefer `.ai-context/`.
+  current reality. For *implementation* context, always prefer `.ai-context/`.
+- Adding a new domain? Create `<domain>.md` and add a row to the File Map in `README.md`.
 
 ---
 
