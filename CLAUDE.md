@@ -26,19 +26,19 @@ down. The flow is a funnel, and each stage gates the next. It has **three levels
 scopes an *initiative* and breaks it into *features* — it's almost never about a single feature:
 
 ```
-1. DISCOVERY        2. GATE        3. INITIATIVE                4. FEATURES               5. DELIVERY
-   discovery.md ─►  Go/No-Go  ─►   docs/initiative/<name>/  ─►  features/<feature>/   ─►  specs + tests
-   "should we?"     decision       PRD: need → features         one per capability        "what & how"
+1. DISCOVERY        2. GATE        3. INITIATIVE                  4. FEATURES               5. DELIVERY
+   discovery.md ─►  Go/No-Go  ─►   docs/initiative_{name}/    ─►  features/<feature>/   ─►  specs + tests
+   "should we?"     decision       PRD: need → features           one per capability        "what & how"
 ```
 
 1. **Discovery** — Start from `docs/template/discovery.md` (the FOCUSED framework). Its job is to
    **challenge and verify the need**: is the problem real, evidenced, worth solving? It ends with
-   an explicit **Go / No-Go / Pivot** decision. Discoveries live in `docs/discovery/`.
+   an explicit **Go / No-Go / Pivot** decision. Discoveries live in `docs/discovery_{name}/`.
 2. **Gate** — Only a **Go** unlocks the next stage. A No-Go is a *successful* discovery: it saved
-   us from building the wrong thing (and stays in `docs/discovery/` as memory).
-3. **Initiative** — On Go, create `docs/initiative/<name>/` by copying `docs/template/_initiative/`.
+   us from building the wrong thing (and stays in `docs/discovery_{name}/` as memory).
+3. **Initiative** — On Go, create `docs/initiative_{name}/` by copying `docs/template/_initiative/`.
    The **PRD lives here**, and its *Feature breakdown* section translates the need into named,
-   prioritized features. See `docs/initiative/README.md` for the mandatory structure.
+   prioritized features. See `docs/template/initiative-rules.md` for the mandatory structure.
 4. **Features** — Each feature from that breakdown gets a folder under `features/<feature-name>/`
    with its own delivery docs (stories, Gherkin, manual tests, UX/a11y, tech spec, release/test
    plan). Stories are a **list inside** `user-stories-and-jtbd.md`, not folders.
@@ -72,12 +72,13 @@ enhanced/
 ├── supabase/                  # Supabase local config + migrations
 ├── public/                    # Static assets
 └── docs/
-    ├── discovery/            # Qualification stage — one file per need (incl. No-Go memory)
-    │   └── README.md
-    ├── initiative/           # One folder per initiative; each holds a PRD + its features
-    │   └── README.md
+    ├── discovery_{name}/     # One folder per initiative's discovery (incl. No-Go memory)
+    │   └── <need>.md
+    ├── initiative_{name}/    # One folder per initiative; each holds a PRD + its features
     └── template/             # Reusable, copy-ready templates
         ├── discovery.md      # FOCUSED discovery
+        ├── discovery-rules.md    # Discovery stage rules
+        ├── initiative-rules.md   # Initiative & feature rules
         ├── prd.md            # PRD template
         ├── user-stories.md   # User stories + JTBD
         └── _initiative/      # Copy this to start a new initiative
@@ -161,18 +162,18 @@ Two doc systems live side by side and must not be confused:
 
 | System | Question it answers | Lives in | Audience |
 |--------|---------------------|----------|----------|
-| **`docs/`** | *Why* are we building this? What is the spec? | `docs/discovery/`, `docs/initiative/`, `docs/template/` | Product + engineering + agents |
+| **`docs/`** | *Why* are we building this? What is the spec? | `docs/discovery_{name}/`, `docs/initiative_{name}/`, `docs/template/` | Product + engineering + agents |
 | **`.ai-context/`** | What is the **current code state** an agent must respect? | `.ai-context/` | AI agents (and engineers) |
 
-- `docs/discovery/` holds the **need qualification** (FOCUSED) — including the No-Go decisions.
-- `docs/initiative/<name>/` is the **planning + spec** record: a PRD that breaks the need into
+- `docs/discovery_{name}/` holds the **need qualification** (FOCUSED) — including the No-Go decisions.
+- `docs/initiative_{name}/` is the **planning + spec** record: a PRD that breaks the need into
   features, and a folder per feature (stories, tests, UX, tech spec). It describes intent.
 - `.ai-context/` describes **reality** — how the code actually works right now and which
   invariants break if you touch the wrong thing. When code and `.ai-context` disagree, the code
   is right and `.ai-context` must be fixed.
 
-See `docs/initiative/README.md` for the exact structure every initiative/feature must follow,
-`docs/discovery/README.md` for the discovery stage, and `docs/template/README.md` for how to start.
+See `docs/template/initiative-rules.md` for the exact structure every initiative/feature must follow,
+`docs/template/discovery-rules.md` for the discovery stage, and `docs/template/README.md` for how to start.
 
 ---
 

@@ -7,16 +7,16 @@ addresses a validated need, then **breaks it down into features**. So our docume
 levels, matching reality:
 
 ```
-INITIATIVE            FEATURE                       STORY
-(the PRD lives here)  (a shippable capability)      (an increment)
-need → features       its own delivery docs         a list inside user-stories-and-jtbd.md
-docs/initiative/<x>/  docs/initiative/<x>/features/<y>/   (not a folder)
+INITIATIVE              FEATURE                            STORY
+(the PRD lives here)    (a shippable capability)           (an increment)
+need → features         its own delivery docs              a list inside user-stories-and-jtbd.md
+docs/initiative_{name}/ docs/initiative_{name}/features/<y>/   (not a folder)
 ```
 
 | Level | Answers | Where |
 |-------|---------|-------|
-| **Discovery** | Should we solve this need? | `docs/discovery/<need>.md` (separate stage) |
-| **Initiative** | What's the scope, and how does the need break into features? | `docs/initiative/<name>/` |
+| **Discovery** | Should we solve this need? | `docs/discovery_{name}/<need>.md` (separate stage) |
+| **Initiative** | What's the scope, and how does the need break into features? | `docs/initiative_{name}/` |
 | **Feature** | What exactly do we build & ship for this capability? | `…/features/<feature-name>/` |
 | **Story** | The next increment of a feature | an item in `product/user-stories-and-jtbd.md` |
 
@@ -28,16 +28,16 @@ docs/initiative/<x>/  docs/initiative/<x>/features/<y>/   (not a folder)
 
 ## When does an initiative get created?
 
-Only **after** a Discovery reaches a **Go** (see `docs/discovery/README.md`). No Go, no initiative.
+Only **after** a Discovery reaches a **Go** (see `docs/template/discovery-rules.md`). No Go, no initiative.
 
 ```
-discovery (Go)  ──►  create docs/initiative/<name>/  ──►  PRD decomposes need into features  ──►  create features/<y>/
+discovery (Go)  ──►  create docs/initiative_{name}/  ──►  PRD decomposes need into features  ──►  create features/<y>/
 ```
 
 ## How to create one
 
-1. Copy the skeleton: `docs/template/_initiative/` → `docs/initiative/<initiative-name>/`
-   (kebab-case, e.g. `self-serve-data-access`).
+1. Copy the skeleton: `docs/template/_initiative/` → `docs/initiative_{name}/`
+   (kebab-case, e.g. `initiative_data-access`).
 2. Link the validated discovery in the initiative `README.md` and at the top of `prd.md` (the PRD
    gate requires it).
 3. Write the PRD. Its **Feature breakdown** section translates the need into named, prioritized
@@ -51,10 +51,12 @@ discovery (Go)  ──►  create docs/initiative/<name>/  ──►  PRD decomp
 ## Mandatory structure
 
 ```
-docs/initiative/<initiative-name>/
+docs/initiative_{name}/
 ├── README.md                          # Initiative overview + status + discovery link + FEATURE INDEX
 ├── executive-summary.md               # Stakeholder TL;DR of the whole initiative
 ├── prd.md                             # PRD: need + DECOMPOSITION into features (the bridge)
+├── architecture.md                    # Cross-cutting technical architecture — THE source of truth
+├── security-overview.md               # Consolidated security model (auth, RLS, threats, GDPR)
 └── features/
     └── <feature-name>/
         ├── README.md                  # 1-screen feature overview + status + doc index
@@ -83,6 +85,8 @@ never fewer. The `tech/` sub-specs (`data-model.md`, `api.md`, …) are created 
 | `README.md` | What is this initiative, where does it stand, what features does it contain? | `_initiative/README.md` |
 | `executive-summary.md` | The non-technical TL;DR a stakeholder reads in 2 minutes. | `_initiative/executive-summary.md` |
 | `prd.md` | The product spec: need, audience, **feature breakdown**, success metrics, MVP. | `docs/template/prd.md` |
+| `architecture.md` | Cross-cutting technical architecture: DB schema, API surface, components, AI integration, state management, auth flows, deployment. **Source of truth** — when feature specs conflict, this document wins. | `_initiative/architecture.md` |
+| `security-overview.md` | Consolidated security model: auth architecture, complete RLS matrix, threat model, GDPR, secrets. Merges security concerns that span multiple features. | `_initiative/security-overview.md` |
 
 ### Feature level
 | File | Answers | Source template |
