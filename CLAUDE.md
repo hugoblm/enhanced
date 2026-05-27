@@ -137,9 +137,10 @@ npx supabase gen types typescript --local > src/lib/supabase/types.ts  # regener
 
 ## Git Workflow
 
-### Never push without an explicit request
-- **Never push to a remote** unless the user explicitly asks.
-- Always ask before pushing.
+### Never commit or push without explicit approval
+- **Never commit** without showing the diff and getting user approval first.
+- **Never push** without showing the branch log/diff and getting user approval first.
+- Each is a separate approval — approving a commit does not approve a push.
 
 ### Branches
 - `main` — production.
@@ -150,6 +151,7 @@ npx supabase gen types typescript --local > src/lib/supabase/types.ts  # regener
 ### Commits
 - Descriptive messages, focused on **why** rather than what.
 - One logical change per commit where practical.
+- Always show `git diff --staged` and ask for approval before committing.
 
 ---
 
