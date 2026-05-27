@@ -194,9 +194,32 @@ as the codebase grows) covers one domain.
 
 ---
 
-## Backlog
+## Backlog (Notion)
 
-Out-of-scope findings go in the PR description, not in code changes.
+The product backlog is the **single source of truth** for all planned work — features, bugs, and improvements. It lives in Notion at:
+
+- **Page**: `Enhanced Backlog`
+- **Page ID**: `36d12d2f-a613-803f-8be9-d480004e579f`
+- **Data source**: `collection://36d12d2f-a613-80ff-9bcc-000bc9f23f7c`
+
+### Rules
+
+1. **When to add items**: Add backlog entries when discovering bugs, identifying improvements, or when the user explicitly asks. If a task surfaces during implementation that is out of scope, add it to the backlog rather than doing it immediately.
+2. **Always specify the Type**: Every item must be tagged as `Bug` or `Feature` — no exceptions.
+3. **Deduplicate before creating**: Before adding a new item, search the backlog (via `notion-search` with `data_source_url`) to check if a similar item already exists in `Not started` or `In progress` status. If a match exists, update it instead of creating a duplicate.
+4. **Always update Status after fixing**: When a backlog item is implemented and merged, immediately update its `Status` to `Done` (or `Staging` if merged on `staging` but not yet on `main`). When picking a ticket up, flip it to `In progress`. The Notion status must reflect reality — a stale `Not started` on a fixed ticket leads to duplicate work and incorrect quick-win audits.
+
+### Schema
+
+| Property | Type | Values |
+|----------|------|--------|
+| Name | title | Free text |
+| Type | select | `Feature`, `Bug` |
+| Priority | select | `High 🔥`, `Medium ✨`, `Low 🤞` |
+| Status | status | `Not started`, `In progress`, `Staging`, `Done`, `Archive` |
+| Assign | person | User IDs |
+| Effort | number | Fibonacci (1, 2, 3, 5, 8, 13, 21) |
+| TAG | multi_select | Free tags |
 
 ---
 
