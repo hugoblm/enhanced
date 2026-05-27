@@ -5,7 +5,7 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: 2026-05-27 against branch `staging`._
+> _Last verified: 2026-05-27 against branch `feat/design-system`._
 
 ---
 
@@ -15,6 +15,7 @@
 |------|-------|----------|
 | `README.md` | Navigation + cross-cutting invariants | **always read first** |
 | `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Supabase, Vercel, OpenRouter, Tailwind |
+| `design-system.md` | Obra design tokens, colors, typography, radius | Figma, shadcn, tokens, light, dark, globals.css |
 
 ---
 

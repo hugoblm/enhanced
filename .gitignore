@@ -38,6 +38,9 @@ yarn-error.log*
 .env.production.local
 # .env.example is safe to commit (contains no secrets)
 
+# design system source tokens (Figma export, not code)
+/DesignSystem/
+
 # supabase
 supabase/.temp/
 
