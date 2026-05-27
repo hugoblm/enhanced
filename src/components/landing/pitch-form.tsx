@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { ArrowRight, Loader2, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createSession } from "@/app/actions/session";
 import { rawIdeaSchema } from "@/lib/schemas/session";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +29,11 @@ export function PitchForm() {
     }
 
     startTransition(async () => {
-      // Server action will be wired in a later commit
-      console.log("[PitchForm] submit:", parsed.data.rawIdea);
+      const result = await createSession(formData);
+      if (result?.error) {
+        setError(result.error);
+        textareaRef.current?.focus();
+      }
     });
   }
 
