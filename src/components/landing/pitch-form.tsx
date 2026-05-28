@@ -1,20 +1,26 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { type SyntheticEvent, useRef, useState, useTransition } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSession } from "@/app/actions/session";
 import { rawIdeaSchema } from "@/lib/schemas/session";
 import { cn } from "@/lib/utils";
 
+const MIN_CHARS = 20;
+
 export function PitchForm() {
+  const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const errorId = "pitch-error";
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const isBelowMin = value.trim().length < MIN_CHARS;
+  const isCtaInactive = isBelowMin || isPending;
+
+  function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
@@ -51,6 +57,7 @@ export function PitchForm() {
           <textarea
             ref={textareaRef}
             name="rawIdea"
+            value={value}
             placeholder="Décris l'idée en quelques phrases. Aussi vague soit-elle. On la remettra en forme."
             rows={6}
             aria-label="Décris ton idée produit"
@@ -58,16 +65,32 @@ export function PitchForm() {
             aria-invalid={error ? true : undefined}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            onChange={() => error && setError(null)}
+            onChange={(e) => {
+              setValue(e.target.value);
+              if (error) setError(null);
+            }}
             className="w-full resize-none border-none bg-transparent px-[22px] pb-3 pt-5 font-sans text-lg leading-7 text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
 
           <div className="flex flex-wrap items-center gap-2 border-t border-secondary px-3.5 pb-3.5 pt-2.5">
-            <span className="hidden font-mono text-[11.5px] text-muted-foreground md:inline">
-              Sans compte. Tu ne signes qu&apos;après la première reformulation.
-            </span>
+            {isBelowMin && (
+              <span
+                aria-live="polite"
+                className="font-mono text-[11.5px] text-muted-foreground"
+              >
+                {value.trim().length} / {MIN_CHARS} caractères
+              </span>
+            )}
             <div className="flex-1" />
-            <Button type="submit" size="lg" disabled={isPending}>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isPending}
+              aria-disabled={isCtaInactive}
+              className={cn(
+                isCtaInactive && "opacity-50 cursor-not-allowed",
+              )}
+            >
               {isPending ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
