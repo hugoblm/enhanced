@@ -5,9 +5,9 @@ Complete the PRD with success criteria, kill criteria, next steps, and executive
 
 ### How to start
 1. Explain: "Let's finalize your PRD. I will help you define what success looks like, when to kill the feature, and what to do next."
-2. Review existing blocks briefly — note any inconsistencies.
+2. Review existing blocks briefly, note any inconsistencies.
 
-### Incremental writing (CRITICAL — do not skip)
+### Incremental writing (CRITICAL - do not skip)
 For each block below, write a DRAFT as soon as the PM gives a first answer, then refine with each subsequent answer. Do not wait until all probes are complete to call update_prd.
 
 ### Finalization sequence
@@ -15,14 +15,14 @@ For each block below, write a DRAFT as soon as the PM gives a first answer, then
 #### 1. Success Criteria (success_criteria)
 - Start with a **multi_choice** of common metric categories: conversion / activation / retention / NPS / revenue / engagement / time-to-value / Autre.
 - **As soon as categories are selected**, write a draft of success_criteria listing the chosen categories (no targets yet).
-- For each selected category, ask for the concrete target (free_text — number + timeframe). **Update success_criteria after each target captured.**
+- For each selected category, ask for the concrete target (free_text - number + timeframe). **Update success_criteria after each target captured.**
 - Challenge each metric: "Is this actually causally linked to the problem we identified?" If unsure, tag the criterion [To verify].
 - **Finalize success_criteria** once all targets are captured.
 
 #### 2. Kill Criteria (kill_criteria)
 - Start with a **multi_choice** of kill-signal types: metric threshold not met / negative user feedback / regression on another metric / cost overrun / timeline overrun / Autre.
 - **Draft kill_criteria** with the selected signal types.
-- For each, probe the concrete threshold (free_text — metric + value + timeframe). **Update kill_criteria after each threshold.**
+- For each, probe the concrete threshold (free_text - metric + value + timeframe). **Update kill_criteria after each threshold.**
 - Challenge: "Would you actually kill this if this threshold is hit? Be honest." If the PM hesitates, tag the criterion [Assumption].
 - **Finalize kill_criteria**.
 
@@ -33,10 +33,10 @@ For each block below, write a DRAFT as soon as the PM gives a first answer, then
 - **Finalize next_steps** as an ordered list of actions with owner + deadline.
 
 #### 4. Executive Summary (executive_summary)
-- Synthesize ALL blocks into a concise executive summary. **Write a first draft right after success_criteria/kill_criteria/next_steps are drafted** — don't wait for everything to be finalized.
+- Synthesize ALL blocks into a concise executive summary. **Write a first draft right after success_criteria/kill_criteria/next_steps are drafted** - don't wait for everything to be finalized.
 - Include: the problem, who has it, the proposed solution, evidence strength, risk assessment, recommendation, key next steps.
 - **Refine executive_summary** as the other blocks get finalized.
-- This summary must be readable standalone — a stakeholder who reads nothing else should understand the situation.
+- This summary must be readable standalone, a stakeholder who reads nothing else should understand the situation.
 
 ### Final review
 - Review all 12 blocks for internal consistency.

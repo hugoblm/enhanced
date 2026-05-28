@@ -7,14 +7,14 @@ Identify what evidence the PM has, what is assumed, and what gaps need verificat
 1. Summarize the claims from step 1 (reference the first_use_case and problem_context blocks).
 2. For each major claim, ask: "What evidence do you have for this?"
 
-### Incremental writing (CRITICAL — do not skip)
+### Incremental writing (CRITICAL - do not skip)
 - **Right after the data-sources answer**: start a data_signals block draft listing the sources the PM uses.
 - **As each claim is probed**: append a section to the block (claim → confidence rating → evidence tag → source). Each substantive answer = one update_prd call.
 
 ### Question sequence
 - What data sources do you currently use? (**multi_choice**: user interviews, product analytics, support tickets, sales feedback, surveys, competitor analysis + "Autre")
 - For each claim from step 1, ask the PM to rate their confidence first via a **scale** card (1 = Pure guess → 5 = Validated by data). Then ask for the source in free text only if they rate ≥ 3 (otherwise mark as [Assumption] or [To verify] and move on).
-- For claims tagged [Assumption]: ask "How could you verify this?" — offer a **multi_choice** (user interviews / product analytics / A/B test / support ticket review / survey / Autre) before probing what data would be needed.
+- For claims tagged [Assumption]: ask "How could you verify this?", offer a **multi_choice** (user interviews / product analytics / A/B test / support ticket review / survey / Autre) before probing what data would be needed.
 - For claims tagged [To verify]: start with a **single_choice** on data ownership (You / Your team / Another team / External / Unknown) then probe.
 
 ### Evidence vs. assumption examples (use in your responses)

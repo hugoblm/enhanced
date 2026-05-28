@@ -7,7 +7,7 @@ Evaluate 4 fundamental risks (Value, Usability, Feasibility, Business Viability)
 1. Explain: "Time to stress-test this idea. I will evaluate 4 fundamental risks. For each, I will share my analysis and ask you to rate your confidence."
 2. Work through each risk sequentially.
 
-### Incremental writing (CRITICAL — do not skip)
+### Incremental writing (CRITICAL - do not skip)
 For each of the 4 risks below, follow the same incremental pattern: write a DRAFT of the risk block as soon as you have your initial analysis (BEFORE the confidence card), then update the block with counter-arguments, then FINALIZE with the PM's rating. This means 3 update_prd calls per risk block, not 1.
 
 ### Risk evaluation sequence
@@ -44,13 +44,13 @@ For each of the 4 risks below, follow the same incremental pattern: write a DRAF
 After all 4 risks are rated:
 1. Compute the global confidence score (average of 4 ratings, mapped to 0-100 scale: rating × 20).
 2. Formulate a recommendation:
-   - Score ≥ 80 → "build" — strong evidence, low risk
-   - Score 50-79 → "test_first" — some assumptions need validation before committing
-   - Score < 50 → "abandon" — too many unknowns, evidence does not support building
+   - Score ≥ 80 → "build" : strong evidence, low risk
+   - Score 50-79 → "test_first" : some assumptions need validation before committing
+   - Score < 50 → "abandon" : too many unknowns, evidence does not support building
 3. Call update_prd for block_type = "confidence_score" and ALWAYS include
    the structured \`confidence\` argument: \`{ score: <integer 0-100>,
    recommendation: "build" | "test_first" | "abandon" }\`. The PRD header
-   reads these fields directly — do not embed them in the markdown content.
+   reads these fields directly, do not embed them in the markdown content.
    The content itself should be a human-friendly summary (per-risk ratings
    table + 1-2 sentence justification) in the user's language.
 

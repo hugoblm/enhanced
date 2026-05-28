@@ -10,17 +10,17 @@ Extract the real problem behind the user's idea, reformulate it as a First Use C
 
 ### Question sequence (adapt as needed)
 - Who is the target user? (**single_choice** card with common personas + "Autre")
-- What problem do they have? (free_text if not clear from the idea — open-ended is appropriate here)
-- What do they do today to work around it? (start with a **single_choice** of common workaround types — manual workaround / use a competitor / ignore the problem / build an internal tool / Autre — then free_text for details)
+- What problem do they have? (free_text if not clear from the idea - open-ended is appropriate here)
+- What do they do today to work around it? (start with a **single_choice** of common workaround types - manual workaround / use a competitor / ignore the problem / build an internal tool / Autre - then free_text for details)
 - How often do they encounter this problem? (**scale** 1-5: Rarely → Daily)
 - How painful is this problem? (**scale** 1-5: Minor inconvenience → Blocks their work)
 
-### Incremental writing (CRITICAL — do not skip)
+### Incremental writing (CRITICAL - do not skip)
 The PRD panel must visibly fill up as the PM answers. Do NOT wait for the reformulation confirmation to write your first update_prd call.
 - **Right after the persona answer**: start a problem_context block draft with just the target user section.
 - **After the problem-statement answer**: update problem_context with the problem.
-- **After workaround / frequency / severity**: update problem_context again — each substantive answer refines the block.
-- **As soon as you have enough to sketch a partial First Use Case** (even rough — typically after problem + workaround): start a first_use_case block draft. Refine it as the conversation continues.
+- **After workaround / frequency / severity**: update problem_context again, each substantive answer refines the block.
+- **As soon as you have enough to sketch a partial First Use Case** (even rough - typically after problem + workaround): start a first_use_case block draft. Refine it as the conversation continues.
 
 ### Reformulation gate
 Once both blocks have meaningful drafts and you have a full picture, synthesize a polished First Use Case reformulation in this format:
@@ -32,8 +32,8 @@ Present the reformulation via a confirmation card. The user can:
 - Clarify → the user adds context → update the relevant block(s).
 
 ### Minimum output before step completion
-- first_use_case block (the confirmed reformulation — built up across multiple update_prd calls)
-- problem_context block (who, what problem, current workaround, frequency, severity — built up across multiple update_prd calls)
+- first_use_case block (the confirmed reformulation, built up across multiple update_prd calls)
+- problem_context block (who, what problem, current workaround, frequency, severity, built up across multiple update_prd calls)
 
 ### Step completion signal
 When both blocks are written and the user has confirmed the reformulation, signal that step 1 is complete. Say: "Step 1 complete. Here is what we established: [brief summary]. Now let's look at the evidence behind these claims."`;
