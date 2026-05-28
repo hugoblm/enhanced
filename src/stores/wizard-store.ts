@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { db } from "@/lib/db/dexie";
 import type { SessionStatus } from "@/lib/types/session";
 
 export type PanelName = "conversation" | "prd";
@@ -21,7 +22,7 @@ interface WizardState {
     rawIdea: string;
     status: string;
   }) => void;
-  advanceStep: () => void;
+  advanceStep: () => Promise<void>;
   goToStep: (step: number) => void;
   setActivePanel: (panel: PanelName) => void;
 }
@@ -51,12 +52,21 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     });
   },
 
-  advanceStep: () => {
-    const { currentStep } = get();
-    if (currentStep < MAX_STEP) {
-      const next = currentStep + 1;
-      set({ currentStep: next, viewingStep: next });
+  advanceStep: async () => {
+    const { currentStep, sessionId } = get();
+    if (currentStep >= MAX_STEP) return;
+    const next = currentStep + 1;
+    if (sessionId) {
+      try {
+        await db.sessions.update(sessionId, {
+          currentStep: next,
+          updatedAt: Date.now(),
+        });
+      } catch (err) {
+        console.error("[wizard-store] advanceStep persistence failed:", err);
+      }
     }
+    set({ currentStep: next, viewingStep: next });
   },
 
   goToStep: (step) => {

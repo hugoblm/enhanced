@@ -115,6 +115,19 @@ export const BLOCK_SORT_ORDER: Record<BlockType, number> = {
   executive_summary: 12,
 };
 
+export const STEP_REQUIREMENTS: Record<number, readonly BlockType[]> = {
+  1: ["first_use_case", "problem_context"],
+  2: ["data_signals"],
+  3: [
+    "risk_value",
+    "risk_usability",
+    "risk_feasibility",
+    "risk_viability",
+    "confidence_score",
+  ],
+  4: ["success_criteria", "kill_criteria", "next_steps", "executive_summary"],
+};
+
 const UpdatePrdOutputSchema = z.object({
   written: z.enum(BLOCK_TYPES),
 });

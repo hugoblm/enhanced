@@ -14,14 +14,19 @@ import {
   type MessageRow,
   type PrdBlockRow,
 } from "@/lib/db/dexie";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   type AskUserOutput,
   BLOCK_SORT_ORDER,
   type BlockType,
+  STEP_REQUIREMENTS,
 } from "@/lib/ai/tools";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 import type { AppUIMessage } from "./types";
+
+const MAX_STEP = 4;
 
 interface UpdatePrdInput {
   block_type: BlockType;
@@ -183,12 +188,49 @@ function ConversationInner({
   useEffect(() => {
     if (hasKickedOff.current) return;
     if (isReadOnly) return;
-    if (currentStep !== 1) return;
     if (chat.messages.length > 0) return;
     if (chat.status !== "ready") return;
     hasKickedOff.current = true;
-    chat.sendMessage({ text: rawIdea });
+    const kickoffText = currentStep === 1 ? rawIdea : "Continuons.";
+    chat.sendMessage({ text: kickoffText });
   }, [chat, chat.status, chat.messages.length, currentStep, rawIdea, isReadOnly]);
+
+  const [presentBlockTypes, setPresentBlockTypes] = useState<Set<BlockType>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    if (chat.status !== "ready") return;
+    let cancelled = false;
+    (async () => {
+      const blocks = await db.prdBlocks
+        .where("sessionId")
+        .equals(sessionId)
+        .toArray();
+      if (cancelled) return;
+      setPresentBlockTypes(new Set(blocks.map((b) => b.blockType)));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chat.status, sessionId]);
+
+  const canAdvance = useMemo(() => {
+    if (isReadOnly) return false;
+    if (currentStep >= MAX_STEP) return false;
+    const required = STEP_REQUIREMENTS[currentStep] ?? [];
+    return required.every((t) => presentBlockTypes.has(t));
+  }, [isReadOnly, currentStep, presentBlockTypes]);
+
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const handleAdvance = useCallback(async () => {
+    if (isAdvancing) return;
+    setIsAdvancing(true);
+    try {
+      await useWizardStore.getState().advanceStep();
+    } finally {
+      setIsAdvancing(false);
+    }
+  }, [isAdvancing]);
 
   const handleSubmit = useCallback(
     (text: string) => {
@@ -211,6 +253,27 @@ function ConversationInner({
         <p className="border-t border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive">
           Une erreur est survenue. Réessaie ton dernier message.
         </p>
+      )}
+      {canAdvance && (
+        <div className="border-t border-border bg-accent/30 px-4 py-3">
+          <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Cette étape est complète. Tu peux passer à la suivante.
+            </p>
+            <Button onClick={handleAdvance} size="sm" disabled={isAdvancing}>
+              {isAdvancing ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Patiente…
+                </>
+              ) : (
+                <>
+                  Continuer <ArrowRight size={14} />
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       )}
       <ChatInput
         onSubmit={handleSubmit}
