@@ -20,6 +20,7 @@ import {
   type AskUserOutput,
   BLOCK_SORT_ORDER,
   type BlockType,
+  type ConfidenceInput,
   STEP_REQUIREMENTS,
 } from "@/lib/ai/tools";
 import { MessageList } from "./message-list";
@@ -32,6 +33,7 @@ interface UpdatePrdInput {
   block_type: BlockType;
   content: string;
   evidence_tags?: EvidenceTag[];
+  confidence?: ConfidenceInput;
 }
 
 interface PrdBlockSummary {
@@ -140,6 +142,13 @@ function ConversationInner({
       if (!submit) return;
       try {
         await upsertPrdBlock(sessionId, currentStep, input);
+        useWizardStore.getState().updateBlock(
+          input.block_type,
+          input.content,
+          input.evidence_tags ?? [],
+          currentStep,
+          input.confidence,
+        );
         submit({
           tool: "update_prd",
           toolCallId: toolCall.toolCallId,

@@ -5,12 +5,12 @@ import {
   type PrdBlockRow,
   type Recommendation,
 } from "@/lib/db/dexie";
+import type { ConfidenceInput } from "@/lib/ai/tools";
 import {
   BLOCK_SORT_ORDER,
   BLOCK_TYPES,
   type BlockType,
 } from "@/lib/prd/constants";
-import { parseConfidenceScore, parseRecommendation } from "@/lib/prd/score";
 import type { SessionStatus } from "@/lib/types/session";
 
 export type PanelName = "conversation" | "prd";
@@ -62,6 +62,7 @@ interface WizardState {
     content: string,
     evidenceTags: EvidenceTag[],
     step: number,
+    confidence?: ConfidenceInput,
   ) => void;
   clearLastUpdated: () => void;
 }
@@ -146,7 +147,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     });
   },
 
-  updateBlock: (blockType, content, evidenceTags, step) => {
+  updateBlock: (blockType, content, evidenceTags, step, confidence) => {
     const state = get();
     const now = Date.now();
     const mirror: PrdBlockMirror = {
@@ -163,22 +164,21 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       lastUpdatedBlockType: blockType,
     };
 
-    let derivedScore: number | null = null;
-    let derivedRecommendation: Recommendation | null = null;
-    if (blockType === "confidence_score") {
-      derivedScore = parseConfidenceScore(content);
-      derivedRecommendation = parseRecommendation(content);
-      patch.confidenceScore = derivedScore;
-      patch.recommendation = derivedRecommendation;
+    // confidence is only meaningful for the confidence_score block. Tool
+    // description says so but we gate here defensively to ignore stray values.
+    const acceptConfidence = confidence && blockType === "confidence_score";
+    if (acceptConfidence) {
+      patch.confidenceScore = confidence.score;
+      patch.recommendation = confidence.recommendation;
     }
 
     set(patch);
 
-    if (blockType === "confidence_score" && state.sessionId) {
+    if (acceptConfidence && state.sessionId) {
       db.sessions
         .update(state.sessionId, {
-          confidenceScore: derivedScore ?? undefined,
-          recommendation: derivedRecommendation ?? undefined,
+          confidenceScore: confidence.score,
+          recommendation: confidence.recommendation,
           updatedAt: now,
         })
         .catch((err) => {

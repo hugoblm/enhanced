@@ -41,10 +41,15 @@ Evaluate 4 fundamental risks (Value, Usability, Feasibility, Business Viability)
 After all 4 risks are rated:
 1. Compute the global confidence score (average of 4 ratings, mapped to 0-100 scale: rating × 20).
 2. Formulate a recommendation:
-   - Score ≥ 80 → "Build" — strong evidence, low risk
-   - Score 50-79 → "Test first" — some assumptions need validation before committing
-   - Score < 50 → "Abandon" — too many unknowns, evidence does not support building
-3. Write the confidence_score block with the score, individual ratings, and recommendation.
+   - Score ≥ 80 → "build" — strong evidence, low risk
+   - Score 50-79 → "test_first" — some assumptions need validation before committing
+   - Score < 50 → "abandon" — too many unknowns, evidence does not support building
+3. Call update_prd for block_type = "confidence_score" and ALWAYS include
+   the structured \`confidence\` argument: \`{ score: <integer 0-100>,
+   recommendation: "build" | "test_first" | "abandon" }\`. The PRD header
+   reads these fields directly — do not embed them in the markdown content.
+   The content itself should be a human-friendly summary (per-risk ratings
+   table + 1-2 sentence justification) in the user's language.
 
 ### Minimum output before step completion
 - risk_value block
