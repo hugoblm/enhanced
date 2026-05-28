@@ -3,11 +3,15 @@ import type { BlockType } from "../ai/tools";
 
 export type SessionStatus = "active" | "completed" | "abandoned";
 
+export type Recommendation = "build" | "test_first" | "abandon";
+
 export interface SessionRow {
   id: string;
   rawIdea: string;
   currentStep: number; // 1..4
   status: SessionStatus;
+  confidenceScore?: number; // 0..100, derived from confidence_score block
+  recommendation?: Recommendation;
   createdAt: number;
   updatedAt: number;
 }
@@ -66,6 +70,8 @@ class EnhancedDB extends Dexie {
       messages: "id, sessionId, [sessionId+step]",
       prdBlocks: "id, sessionId, [sessionId+blockType]",
     });
+    // confidenceScore + recommendation are non-indexed fields on SessionRow.
+    // Dexie stores them as plain object properties — no schema bump required.
   }
 }
 
