@@ -3,6 +3,7 @@
 import { type AskUserInput, CardRenderer } from "@/components/cards/card-renderer";
 import type { AskUserOutput } from "@/lib/ai/tools";
 import { cn } from "@/lib/utils";
+import { MessageMarkdown } from "./message-markdown";
 import type { AppUIMessage, AppUIMessagePart } from "./types";
 
 interface Props {
@@ -41,13 +42,13 @@ export function MessageBubble({ message, onAskUserSubmit }: Props) {
       {textContent && (
         <div
           className={cn(
-            "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-[15px] leading-6",
+            "max-w-[85%] rounded-2xl px-4 py-3 text-[15px] leading-6",
             isUser
-              ? "bg-foreground text-background"
+              ? "whitespace-pre-wrap bg-foreground text-background"
               : "border border-border bg-background text-foreground",
           )}
         >
-          {textContent}
+          {isUser ? textContent : <MessageMarkdown>{textContent}</MessageMarkdown>}
         </div>
       )}
       {askUserParts.map((part) => {
