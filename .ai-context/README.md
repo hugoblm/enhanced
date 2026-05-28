@@ -29,7 +29,7 @@ Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
           MCP servers (PostHog/Mixpanel/Amplitude, future)
 ```
 
-**Status: Scaffolded, no features implemented.**
+**Status: Landing page (`/`) shipped on `feat/landing-page`. Wizard, auth flow, AI integration, and PostHog instrumentation still pending.**
 
 ### What exists
 - Next.js 16 App Router with TypeScript strict
