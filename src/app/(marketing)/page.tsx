@@ -81,7 +81,7 @@ function EyebrowPill() {
   return (
     <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-border px-2.5 py-1 pl-1.5 font-ui text-xs text-[#525252] font-medium">
       <span className="rounded-full bg-foreground px-2 py-0.5 text-[10.5px] tracking-[0.5px] text-primary-foreground">
-        V1
+        BETA
       </span>
       Pour les équipes qui buildent 10x plus vite — mais pas 10x mieux.
     </div>
