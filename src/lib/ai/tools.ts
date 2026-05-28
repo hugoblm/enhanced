@@ -76,7 +76,7 @@ export const askUserTool = tool({
   outputSchema: AskUserOutputSchema,
 });
 
-const EvidenceTagSchema = z.object({
+export const EvidenceTagSchema = z.object({
   text: z.string().describe("The claim or statement being tagged"),
   tag: z
     .enum(["evidence", "assumption", "to_verify"])
