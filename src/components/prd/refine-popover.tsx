@@ -68,6 +68,7 @@ export function RefinePopover({ blockType, currentContent, step, children }: Pro
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           placeholder="Ex : raccourcis, ajoute une métrique chiffrée, challenge cette hypothèse…"
+          aria-label={`Instruction de raffinement pour le bloc ${BLOCK_HEADINGS[blockType]}`}
           maxLength={MAX_INSTRUCTION}
           rows={4}
           disabled={isRefining}

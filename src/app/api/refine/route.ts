@@ -1,19 +1,16 @@
 import { generateText, Output } from "ai";
-import { z } from "zod";
 import { conversationModel } from "@/lib/ai/openrouter";
 import { buildRefineUserMessage, REFINE_SYSTEM_PROMPT } from "@/lib/ai/prompts/refine";
-import { EvidenceTagSchema } from "@/lib/ai/tools";
-import { refineRequestSchema } from "@/lib/schemas/refine";
+import {
+  type RefineRequest,
+  refineRequestSchema,
+  refineResponseSchema,
+} from "@/lib/schemas/refine";
 
 export const maxDuration = 60;
 
-const RefineOutputSchema = z.object({
-  content: z.string().min(1).max(10_000),
-  evidence_tags: z.array(EvidenceTagSchema),
-});
-
 export async function POST(req: Request) {
-  let body: z.infer<typeof refineRequestSchema>;
+  let body: RefineRequest;
   try {
     body = refineRequestSchema.parse(await req.json());
   } catch (err) {
@@ -31,7 +28,7 @@ export async function POST(req: Request) {
         instruction: body.instruction,
         allBlocks: body.allBlocks,
       }),
-      output: Output.object({ schema: RefineOutputSchema }),
+      output: Output.object({ schema: refineResponseSchema }),
     });
 
     return Response.json(result.output);

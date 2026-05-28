@@ -3,20 +3,17 @@
 import { useCallback, useState } from "react";
 import { useWizardStore } from "@/stores/wizard-store";
 import { upsertPrdBlock } from "@/lib/db/prd-blocks";
-import type { EvidenceTag } from "@/lib/db/dexie";
 import type { BlockType } from "@/lib/ai/tools";
-import type { RefineContextBlock } from "@/lib/schemas/refine";
+import {
+  type RefineContextBlock,
+  refineResponseSchema,
+} from "@/lib/schemas/refine";
 
 interface RefineParams {
   blockType: BlockType;
   currentContent: string;
   instruction: string;
   step: number;
-}
-
-interface RefineResponse {
-  content: string;
-  evidence_tags: EvidenceTag[];
 }
 
 export function useRefineBlock() {
@@ -59,7 +56,7 @@ export function useRefineBlock() {
         throw new Error(`Erreur ${response.status}`);
       }
 
-      const data = (await response.json()) as RefineResponse;
+      const data = refineResponseSchema.parse(await response.json());
 
       useWizardStore.getState().updateBlock(
         params.blockType,
@@ -86,5 +83,7 @@ export function useRefineBlock() {
     }
   }, []);
 
-  return { refine, isRefining, error, clearError: () => setError(null) };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { refine, isRefining, error, clearError };
 }

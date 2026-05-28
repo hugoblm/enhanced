@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EvidenceTagSchema } from "@/lib/ai/tools";
 import { BLOCK_TYPES } from "@/lib/prd/constants";
 
 const ContextBlockSchema = z.object({
@@ -16,5 +17,11 @@ export const refineRequestSchema = z.object({
   step: z.number().int().min(1).max(4),
 });
 
+export const refineResponseSchema = z.object({
+  content: z.string().min(1).max(10_000),
+  evidence_tags: z.array(EvidenceTagSchema),
+});
+
 export type RefineRequest = z.infer<typeof refineRequestSchema>;
 export type RefineContextBlock = z.infer<typeof ContextBlockSchema>;
+export type RefineResponse = z.infer<typeof refineResponseSchema>;
