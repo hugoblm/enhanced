@@ -138,7 +138,12 @@ export const useWizardStore = create<WizardState>((set, get) => ({
         updatedAt: row.updatedAt,
       };
     }
-    set({ blocks, confidenceScore: score, recommendation });
+    set({
+      blocks,
+      confidenceScore: score,
+      recommendation,
+      lastUpdatedBlockType: null,
+    });
   },
 
   updateBlock: (blockType, content, evidenceTags, step) => {
