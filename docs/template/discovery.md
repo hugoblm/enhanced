@@ -160,9 +160,9 @@ The discovery is complete only when this is filled.
 - **Open `[To verify]` items remaining:** \<list, or "none"\>
 - **Next step:**
   - On **Go** → create an initiative: copy `docs/template/_initiative/` to
-    `docs/initiative/<name>/`, and link *this* discovery from the initiative README + the PRD gate.
+    `docs/initiative_{name}/`, and link *this* discovery from the initiative README + the PRD gate.
     The PRD then breaks the need down into features.
-  - On **No-Go** → record the reason; keep this doc in `docs/discovery/` as institutional memory.
+  - On **No-Go** → record the reason; keep this doc in `docs/discovery_{name}/` as institutional memory.
   - On **Pivot** → state the new framing and loop back to **Immerse**.
 
 > 🔍 **Final challenge:** Would you bet your own time/money on this Go? If the honest answer is

@@ -1,7 +1,7 @@
 # Templates
 
 Reusable, copy-ready templates for product work. Don't edit a template in place when documenting
-real work — **copy** it into `docs/discovery/` or `docs/initiative/` and fill the copy.
+real work — **copy** it into `docs/discovery_{name}/` or `docs/initiative_{name}/` and fill the copy.
 
 ## What's here
 
@@ -11,18 +11,20 @@ real work — **copy** it into `docs/discovery/` or `docs/initiative/` and fill 
 | `prd.md` | Spec an initiative: need, audience, **feature breakdown**, metrics, MVP. | Initiative (after a Go) |
 | `user-stories.md` | Capture who needs what and why, as stories + JTBD. | Feature |
 | `_initiative/` | The **whole initiative folder** skeleton (incl. `features/_feature/`) — copy to start one. | On a Go |
+| `_initiative/architecture.md` | Cross-cutting technical architecture — source of truth for DB, API, AI, components, deployment. | Initiative |
+| `_initiative/security-overview.md` | Consolidated security model — auth, RLS matrix, threats, GDPR, secrets. | Initiative |
 
 ## The flow
 
 ```
-discovery.md  ──►  Go/No-Go  ──►  copy _initiative/ to docs/initiative/<name>/  ──►  PRD breaks need into features  ──►  copy features/_feature/ per feature
+discovery.md  ──►  Go/No-Go  ──►  copy _initiative/ to docs/initiative_{name}/  ──►  PRD breaks need into features  ──►  copy features/_feature/ per feature
 ```
 
-1. **Discovery first.** Copy `discovery.md` to `docs/discovery/<need>.md` and work it until you
-   reach a decision. A No-Go is a win — it saved build time. (See `docs/discovery/README.md`.)
+1. **Discovery first.** Copy `discovery.md` to `docs/discovery_{name}/<need>.md` and work it until you
+   reach a decision. A No-Go is a win — it saved build time. (See `docs/template/discovery-rules.md`.)
 2. **On a Go, create the initiative.** Copy the entire `_initiative/` directory to
-   `docs/initiative/<initiative-name>/` (kebab-case). The structure inside is mandatory — see
-   `docs/initiative/README.md`.
+   `docs/initiative_{name}/` (kebab-case). The structure inside is mandatory — see
+   `docs/template/initiative-rules.md`.
 3. **Write the PRD, then split into features.** The PRD opens with a gate (link the validated
    discovery), and its **Feature breakdown** section names the child features. For each one, copy
    `_initiative/features/_feature/` to `features/<feature-name>/` and fill its delivery docs

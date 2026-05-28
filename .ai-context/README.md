@@ -5,62 +5,184 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: \<date\> against branch `\<branch\>`._
+> _Last verified: 2026-05-28 against branch `feat/block-refinement`._
+
+> 🚧 **V1 demo deviates from `docs/initiative_wizard/prd.md`.** No Supabase, no auth, all persistence
+> in client-side Dexie (IndexedDB). See [`docs/initiative_wizard/decisions.md`](../docs/initiative_wizard/decisions.md)
+> for the rationale.
 
 ---
 
 ## File Map
 
-As the codebase grows, add one file per domain and register it here. Keep each file concise and
-keyword-rich so an agent can find the right one fast.
-
 | File | Scope | Keywords |
 |------|-------|----------|
 | `README.md` | Navigation + cross-cutting invariants | **always read first** |
-| _`<domain>.md`_ | _TO BE FILLED — e.g. `auth.md`, `data-model.md`, `api.md`_ | _searchable terms_ |
+| `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Dexie, Vercel, OpenRouter, Tailwind |
+| `design-system.md` | Obra design tokens, colors, typography, radius | Figma, shadcn, tokens, light, dark, globals.css |
+| `conversation-engine.md` | `/api/chat` route, `useChat` setup, tool resolution, step advancement | OpenRouter, ask_user, update_prd, cards, Dexie, STEP_REQUIREMENTS |
+| `prd-live-builder.md` | Right panel: PrdViewer + PrdHeader + PrdBlock(+placeholder) + Zustand mirror | wizard-store, blocks, confidence, hydration, auto-scroll, evidence tags |
+| `refine.md` | Block refinement: `/api/refine` route + `useRefineBlock` hook + `RefinePopover` | generateText+Output.object, EvidenceTagSchema, upsertPrdBlock reuse |
 
-<!-- Example rows, for reference (delete once real domains exist):
-| `auth.md`       | Login, sessions, tokens, permissions | OAuth, JWT, session, RBAC, guards |
-| `data-model.md` | Schema, migrations, entities         | tables, migrations, relations, indexes |
-| `api.md`        | Endpoints, contracts, validation     | routes, DTOs, Zod, errors, pagination |
--->
+---
+
+## Current Architecture
+
+```
+Browser → Next.js (Vercel)
+   │            │
+   │            ↓
+   │      OpenRouter (AI, future)
+   │
+   ↓
+Dexie (IndexedDB, local browser only)
+```
+
+**No server-side persistence in V1.** No Supabase, no auth, no cookies for session identity.
+Sessions live in `Dexie` in the user's browser; an in-progress session is gone if the browser
+storage is cleared.
+
+**Status: Landing page (`/`) + wizard shell (`/session/[id]`) + conversation engine + PRD live
+builder + block refinement shipped on Dexie persistence.** PostHog and the remaining post-démo
+features (pdf-export, public-sharing, prd-versioning, deferred-auth) still pending.
+
+### What exists
+- Next.js 16 App Router with TypeScript strict
+- **Dexie 4 client-side DB** (`src/lib/db/dexie.ts`) — `sessions`, `messages`, `prdBlocks` tables
+  (schema v2)
+- shadcn/ui: Button, Tabs, Textarea, RadioGroup, Checkbox, Slider (Base UI–backed)
+- Zustand, Zod, React Hook Form, Vercel AI SDK + `@ai-sdk/react` (`useChat`), `@openrouter/ai-sdk-provider`, react-markdown installed
+- Landing page at `/` via `(marketing)` route group — PitchForm client island that **writes to Dexie**
+  and client-navigates to `/session/[id]`
+- Wizard at `/session/[id]` via `(app)` route group — server validates UUID format, client hydrates
+  the Zustand store from Dexie, renders split-view (40/60 desktop, tabs < 1024px)
+- **Conversation engine** in the left panel: `/api/chat` stateless route streaming OpenRouter
+  responses with `ask_user` + `update_prd` tools; cards rendered inline next to assistant
+  messages; "Continuer" advances the step when required PRD blocks are present. See
+  [`conversation-engine.md`](conversation-engine.md).
+- **PRD live builder** in the right panel: 12 fixed-order blocks rendered from the wizard-store
+  (mirror of `db.prdBlocks`), hydrated from Dexie at PrdViewer mount; `update_prd` tool calls
+  flow through `conversation.tsx onToolCall` -> `upsertPrdBlock` (Dexie) -> `wizard-store.updateBlock`
+  (state); confidence score is a structured field on the tool input. Animations on block entry,
+  ring-2 highlight on update, auto-scroll with pause when the user scrolls away. See
+  [`prd-live-builder.md`](prd-live-builder.md).
+- **Block refinement** on every filled block: the "Affiner" button opens a popover with a
+  natural-language instruction; `useRefineBlock` POSTs to `/api/refine`, which calls the model
+  with an `Output.object` schema and returns `{ content, evidence_tags }`. The hook re-uses
+  `upsertPrdBlock` + `wizard-store.updateBlock` — the same write path as `update_prd`. See
+  [`refine.md`](refine.md).
+
+### What does NOT exist (and won't, for the demo)
+- No authentication flow (deferred-auth feature is shelved — see decisions.md)
+- No Supabase: `@supabase/*` deps removed, `src/lib/supabase/*` deleted, `supabase/migrations/*` deleted
+- No middleware (`src/middleware.ts` deleted with the Supabase removal)
+- No MCP connections
+- No PostHog tracking
+
+---
+
+## Routes
+
+| Route | Type | Auth | Description |
+|-------|------|------|-------------|
+| `/` | Page (SSR) | None | Landing page — PitchForm writes Dexie session + client-navigates `/session/[id]` |
+| `/session/[id]` | Page (SSR shell, client hydration) | None | Wizard shell — server validates UUID format only; client hydrates store from Dexie, renders split-view (or tabs) |
+| `/api/chat` | Route handler (Node runtime, `maxDuration = 60`) | None | Stateless: Zod-validates body, builds system prompt, `streamText` with the `ask_user`/`update_prd` tools, returns SSE via `toUIMessageStreamResponse`. Reads/writes no DB. |
+| `/api/refine` | Route handler (Node runtime, `maxDuration = 60`) | None | Stateless: Zod-validates body (`refineRequestSchema`), calls `generateText` with `Output.object({ schema: { content, evidence_tags } })`, returns the object as JSON. Reads/writes no DB. |
+
+### Data flow: Landing → Session
+
+```
+Browser GET /
+  → (marketing)/page.tsx (Server Component: header, headline, PitchForm island)
+  → pitch-form.tsx (Client: textarea + CTA, client-side Zod validation)
+      On submit:
+      1. Validate via rawIdeaSchema (Zod, min 20 / max 5000 chars)
+      2. const id = crypto.randomUUID()
+      3. db.sessions.put({ id, rawIdea, currentStep:1, status:"active", createdAt:Date.now(), updatedAt:Date.now() })
+      4. router.push(`/session/${id}`)   // client-side nav, no server round-trip
+```
+
+### Data flow: Session page → Wizard shell
+
+```
+Browser GET /session/{id}
+  → (app)/layout.tsx (Server: h-screen flex flex-col wrapper)
+  → (app)/session/[id]/page.tsx (Server Component, minimal)
+      1. Validate id format as UUID
+      2. notFound() if malformed
+      3. Render <WizardClient sessionId={id} />   // no DB read
+  → wizard-client.tsx (Client boundary)
+      → useEffect: const session = await db.sessions.get(sessionId)
+        - if undefined  → render "Session introuvable" client-side (link to /)
+        - else          → useWizardStore.initialize(session); render <WizardShell />
+  → wizard-shell.tsx (Client)
+      → useMediaQuery("(min-width: 1024px)") picks layout
+      → Desktop: StepIndicator + grid-cols-[40fr_60fr] (ConversationPanel | PrdPanel)
+      → Mobile/tablet: StepIndicator + Tabs (keepMounted on both panels)
+```
+
+**Step model (`wizard-store`):** `currentStep` is actual progress (1-4). `viewingStep` is what's
+displayed — diverges only when a user clicks a completed step to review it; `currentStep` is never
+rolled back. `advanceStep` is async and called by the conversation-engine via
+`useWizardStore.getState().advanceStep()` when the user confirms a step is complete.
+
+**Persistence contract:** the source of truth for a session's `rawIdea`/`currentStep`/`status` is
+the Dexie row. The Zustand store is hydrated on mount and updated optimistically. `advanceStep`
+writes the new `currentStep` and `updatedAt` to `db.sessions` (best-effort: state advances even if
+the write throws — logged). Messages and PRD blocks are written by the conversation-engine to
+`db.messages` and `db.prdBlocks`. See [`conversation-engine.md`](conversation-engine.md).
+
+---
+
+## Environment Variables
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `OPENROUTER_API_KEY` | `.env.local` (dev) + Vercel env (Production + Preview, Sensitive) | Server-only; used by `/api/chat` to call OpenRouter via `@openrouter/ai-sdk-provider`. |
+| `OPENROUTER_MODEL` | optional | Overrides the default model (`anthropic/claude-sonnet-4-20250514`). |
+
+Neither uses the `NEXT_PUBLIC_` prefix — both are server-only.
 
 ---
 
 ## Cross-Cutting Invariants
 
-These are **coupling points**: places where two parts of the system must agree. Breaking one
-side without updating the other causes bugs that are hard to trace. Document each one as it
-appears, in this exact shape:
+> **Invariant — Dexie writes are client-only**
+> - **What:** `import { db } from "@/lib/db/dexie"` must only be used in Client Components or in
+>   code that runs only in the browser (event handlers, `useEffect`). Server Components and route
+>   handlers cannot access IndexedDB.
+> - **Where:** `src/lib/db/dexie.ts`, anywhere that imports it.
+> - **Breaks if:** Dexie is imported into a Server Component or middleware → runtime crash on the
+>   server ("indexedDB is not defined").
 
-> **Invariant — \<short name\>**
-> - **What:** the rule that must hold.
-> - **Where:** every file/place that participates.
-> - **Breaks if:** what goes wrong when the sides drift apart.
+> **Invariant — Session source of truth is the Dexie row**
+> - **What:** The Zustand `wizard-store` is hydration state for the current render. Any state that
+>   must survive a refresh (currentStep, status) has to be written back to `db.sessions`.
+> - **Where:** `src/stores/wizard-store.ts`, future write-through in the conversation-engine feature.
+> - **Breaks if:** a feature mutates the store but forgets to `db.sessions.update(...)` → refresh
+>   silently resets that state.
 
-<!-- TO BE FILLED. Real examples to model yours on:
+> **Invariant — .ai-context must be updated in every commit that changes code**
+> - **What:** Any commit that modifies routes, data flows, modules, services, or invariants must
+>   include matching `.ai-context/` updates.
+> - **Where:** This directory.
+> - **Breaks if:** skipped → next agent works from stale context → regressions.
 
-> **Invariant — Shared secret between services**
-> - **What:** `INTERNAL_API_SECRET` is identical in service A and service B.
-> - **Where:** `service-a/.env`, `service-b/.env`.
-> - **Breaks if:** they differ → service-to-service calls 401.
+---
 
-> **Invariant — Schema version**
-> - **What:** bump the local DB schema version on every table/index change; never reuse a number.
-> - **Where:** `lib/db.ts` (version constant) + migration files.
-> - **Breaks if:** version not bumped → clients keep a stale schema, writes fail silently.
+## Deploy
 
-> **Invariant — Plan/limits defined in one place**
-> - **What:** plan limits are authored once and consumed everywhere.
-> - **Where:** `config/plans.ts` (source of truth) + any UI/feature gate that reads them.
-> - **Breaks if:** a limit is hard-coded elsewhere → UI and backend disagree on entitlements.
--->
+| Environment | Branch | Domain | Trigger |
+|-------------|--------|--------|---------|
+| Production | `main` | `enhanced.pm` | Push to `main` |
+| Staging | `staging` | `staging.enhanced.pm` (pending DNS) | Push to `staging` |
+
+Deploys are automatic via Vercel GitHub integration. No GitHub Actions workflow.
 
 ---
 
 ## Maintenance Rules
-
-Keeping this directory true is part of the work, not an afterthought:
 
 - **After changing a data flow** → update the matching domain file.
 - **After adding/removing a module, route, service, or tool** → update the relevant domain file
@@ -68,12 +190,3 @@ Keeping this directory true is part of the work, not an afterthought:
 - **After changing a cross-cutting invariant** → update the Invariants section here.
 - **Verify, don't assume** — when you touch a domain, re-read its file and correct anything that
   no longer matches the code. Update the `Last verified` date at the top.
-
----
-
-## Why this exists (for newcomers)
-
-An agent (or a new engineer) that reads `CLAUDE.md` then this file should be able to make a safe
-change without re-deriving the whole system. The goal is **fewer regressions**: most bugs from
-AI-assisted changes come from breaking an invariant nobody wrote down. Writing them down here is
-the fix.

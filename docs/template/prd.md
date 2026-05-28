@@ -12,7 +12,7 @@
 A PRD without a Go-decision Discovery behind it is a solution in search of a problem. Before
 filling anything below:
 
-- **Linked Discovery:** \<link to `docs/discovery/<need>.md`\>
+- **Linked Discovery:** \<link to `docs/discovery_{name}/<need>.md`\>
 - **Discovery decision:** `Go` ✓ (if not `Go`, stop — this PRD shouldn't exist yet)
 - **Open `[To verify]` items inherited from Discovery:** \<list, or "none"\>
 

@@ -26,19 +26,19 @@ down. The flow is a funnel, and each stage gates the next. It has **three levels
 scopes an *initiative* and breaks it into *features* — it's almost never about a single feature:
 
 ```
-1. DISCOVERY        2. GATE        3. INITIATIVE                4. FEATURES               5. DELIVERY
-   discovery.md ─►  Go/No-Go  ─►   docs/initiative/<name>/  ─►  features/<feature>/   ─►  specs + tests
-   "should we?"     decision       PRD: need → features         one per capability        "what & how"
+1. DISCOVERY        2. GATE        3. INITIATIVE                  4. FEATURES               5. DELIVERY
+   discovery.md ─►  Go/No-Go  ─►   docs/initiative_{name}/    ─►  features/<feature>/   ─►  specs + tests
+   "should we?"     decision       PRD: need → features           one per capability        "what & how"
 ```
 
 1. **Discovery** — Start from `docs/template/discovery.md` (the FOCUSED framework). Its job is to
    **challenge and verify the need**: is the problem real, evidenced, worth solving? It ends with
-   an explicit **Go / No-Go / Pivot** decision. Discoveries live in `docs/discovery/`.
+   an explicit **Go / No-Go / Pivot** decision. Discoveries live in `docs/discovery_{name}/`.
 2. **Gate** — Only a **Go** unlocks the next stage. A No-Go is a *successful* discovery: it saved
-   us from building the wrong thing (and stays in `docs/discovery/` as memory).
-3. **Initiative** — On Go, create `docs/initiative/<name>/` by copying `docs/template/_initiative/`.
+   us from building the wrong thing (and stays in `docs/discovery_{name}/` as memory).
+3. **Initiative** — On Go, create `docs/initiative_{name}/` by copying `docs/template/_initiative/`.
    The **PRD lives here**, and its *Feature breakdown* section translates the need into named,
-   prioritized features. See `docs/initiative/README.md` for the mandatory structure.
+   prioritized features. See `docs/template/initiative-rules.md` for the mandatory structure.
 4. **Features** — Each feature from that breakdown gets a folder under `features/<feature-name>/`
    with its own delivery docs (stories, Gherkin, manual tests, UX/a11y, tech spec, release/test
    plan). Stories are a **list inside** `user-stories-and-jtbd.md`, not folders.
@@ -72,12 +72,13 @@ enhanced/
 ├── supabase/                  # Supabase local config + migrations
 ├── public/                    # Static assets
 └── docs/
-    ├── discovery/            # Qualification stage — one file per need (incl. No-Go memory)
-    │   └── README.md
-    ├── initiative/           # One folder per initiative; each holds a PRD + its features
-    │   └── README.md
+    ├── discovery_{name}/     # One folder per initiative's discovery (incl. No-Go memory)
+    │   └── <need>.md
+    ├── initiative_{name}/    # One folder per initiative; each holds a PRD + its features
     └── template/             # Reusable, copy-ready templates
         ├── discovery.md      # FOCUSED discovery
+        ├── discovery-rules.md    # Discovery stage rules
+        ├── initiative-rules.md   # Initiative & feature rules
         ├── prd.md            # PRD template
         ├── user-stories.md   # User stories + JTBD
         └── _initiative/      # Copy this to start a new initiative
@@ -87,14 +88,20 @@ enhanced/
 
 ## Technology Stack
 
+> 🚧 **V1 demo deviates from this table on persistence and auth.**
+> No Supabase, no auth: persistence is client-only Dexie. See
+> [`docs/initiative_wizard/decisions.md`](docs/initiative_wizard/decisions.md).
+
 | Area | Stack | Runtime | Notes |
 |------|-------|---------|-------|
 | Framework | Next.js 16 (App Router) | Node 22 | TypeScript strict |
 | UI | shadcn/ui + Tailwind CSS v4 | — | Geist font (local via `geist` package) |
-| Database + Auth | Supabase (Postgres + Magic Link) | — | RLS enforced, `@supabase/ssr` |
+| Persistence (V1 demo) | Dexie (IndexedDB) | Browser | `src/lib/db/dexie.ts`, single `sessions` table |
+| Auth (V1 demo) | None | — | `deferred-auth` feature shelved post-démo |
+| Database + Auth (long-term target) | Supabase (Postgres + Magic Link) | — | RLS enforced, `@supabase/ssr` — re-introduced post-démo |
 | AI | Vercel AI SDK + OpenRouter | — | `ai`, `@ai-sdk/mcp`, `@openrouter/ai-sdk-provider` |
 | Validation | Zod + React Hook Form | — | Shared schemas client/server |
-| State | Zustand | — | Wizard in-session state |
+| State | Zustand | — | Wizard in-session state, hydrated from Dexie |
 | Analytics | PostHog | — | `posthog-js` + `posthog-node` |
 | Deploy | Vercel | — | Preview deploys enabled |
 | CI/CD | GitHub Actions | — | |
@@ -137,9 +144,10 @@ npx supabase gen types typescript --local > src/lib/supabase/types.ts  # regener
 
 ## Git Workflow
 
-### Never push without an explicit request
-- **Never push to a remote** unless the user explicitly asks.
-- Always ask before pushing.
+### Never commit or push without explicit approval
+- **Never commit** without showing the diff and getting user approval first.
+- **Never push** without showing the branch log/diff and getting user approval first.
+- Each is a separate approval — approving a commit does not approve a push.
 
 ### Branches
 - `main` — production.
@@ -150,6 +158,7 @@ npx supabase gen types typescript --local > src/lib/supabase/types.ts  # regener
 ### Commits
 - Descriptive messages, focused on **why** rather than what.
 - One logical change per commit where practical.
+- Always show `git diff --staged` and ask for approval before committing.
 
 ---
 
@@ -159,44 +168,78 @@ Two doc systems live side by side and must not be confused:
 
 | System | Question it answers | Lives in | Audience |
 |--------|---------------------|----------|----------|
-| **`docs/`** | *Why* are we building this? What is the spec? | `docs/discovery/`, `docs/initiative/`, `docs/template/` | Product + engineering + agents |
+| **`docs/`** | *Why* are we building this? What is the spec? | `docs/discovery_{name}/`, `docs/initiative_{name}/`, `docs/template/` | Product + engineering + agents |
 | **`.ai-context/`** | What is the **current code state** an agent must respect? | `.ai-context/` | AI agents (and engineers) |
 
-- `docs/discovery/` holds the **need qualification** (FOCUSED) — including the No-Go decisions.
-- `docs/initiative/<name>/` is the **planning + spec** record: a PRD that breaks the need into
+- `docs/discovery_{name}/` holds the **need qualification** (FOCUSED) — including the No-Go decisions.
+- `docs/initiative_{name}/` is the **planning + spec** record: a PRD that breaks the need into
   features, and a folder per feature (stories, tests, UX, tech spec). It describes intent.
 - `.ai-context/` describes **reality** — how the code actually works right now and which
   invariants break if you touch the wrong thing. When code and `.ai-context` disagree, the code
   is right and `.ai-context` must be fixed.
 
-See `docs/initiative/README.md` for the exact structure every initiative/feature must follow,
-`docs/discovery/README.md` for the discovery stage, and `docs/template/README.md` for how to start.
+See `docs/template/initiative-rules.md` for the exact structure every initiative/feature must follow,
+`docs/template/discovery-rules.md` for the discovery stage, and `docs/template/README.md` for how to start.
 
 ---
 
 ## AI Context Documentation
 
-> **MANDATORY:** Before starting ANY plan, implementation, or non-trivial change, read
-> `.ai-context/README.md` first, then the relevant domain file(s). Do this automatically,
-> without waiting to be asked. Skipping it leads to regressions and broken invariants.
+> **NON-NEGOTIABLE.** `.ai-context/` is the primary context for all AI development agents.
+> Violations of these rules produce regressions, stale docs, and broken invariants.
 
-The `.ai-context/` directory holds concise documentation of the **current code state**, written
-for AI agents. `README.md` is the navigation map plus the cross-cutting invariants (coupling
-points that, if broken on one side without the other, cause bugs). Each additional file (added
-as the codebase grows) covers one domain.
+The `.ai-context/` directory documents the **current code state** — what the code actually does
+today and which invariants break if you touch the wrong thing. `README.md` is the navigation
+map + cross-cutting invariants. Each additional file covers one domain.
 
-### Maintenance Rules
-- **After changing a data flow** → update the matching `.ai-context/*.md`.
-- **After adding/removing a module, route, service, or tool** → update the relevant domain file.
-- **After changing a cross-service invariant** → update `.ai-context/README.md`.
+### Before ANY development
+- **READ** `.ai-context/README.md` first, then the relevant domain file(s).
+- Do this automatically, without waiting to be asked. No exceptions.
+
+### Before ANY commit
+- **VERIFY** that `.ai-context/` still matches the code you changed.
+- If your changes affect a data flow, module, route, service, tool, or invariant → **update
+  the matching `.ai-context/*.md` in the same commit**. Not after. Not later. Same commit.
+
+### Before ANY push
+- **RE-READ** every `.ai-context/` file you touched and confirm it reflects the actual code.
+- `.ai-context/` must **always** be up to date on every pushed commit. A stale `.ai-context/`
+  on a pushed branch is a bug.
+
+### General rules
+- When code and `.ai-context/` disagree → the code is right. Fix the doc immediately.
 - **Relation to `docs/`** — `docs/` = intent & history (specs, planning). `.ai-context/` =
-  current reality. For *implementation* context, prefer `.ai-context/`.
+  current reality. For *implementation* context, always prefer `.ai-context/`.
+- Adding a new domain? Create `<domain>.md` and add a row to the File Map in `README.md`.
 
 ---
 
-## Backlog
+## Backlog (Notion)
 
-Out-of-scope findings go in the PR description, not in code changes.
+The product backlog is the **single source of truth** for all planned work — features, bugs, and improvements. It lives in Notion at:
+
+- **Page**: `Enhanced Backlog`
+- **Page ID**: `36d12d2f-a613-803f-8be9-d480004e579f`
+- **Data source**: `collection://36d12d2f-a613-80ff-9bcc-000bc9f23f7c`
+
+### Rules
+
+1. **When to add items**: Add backlog entries when discovering bugs, identifying improvements, or when the user explicitly asks. If a task surfaces during implementation that is out of scope, add it to the backlog rather than doing it immediately.
+2. **Always specify the Type**: Every item must be tagged as `Bug` or `Feature` — no exceptions.
+3. **Deduplicate before creating**: Before adding a new item, search the backlog (via `notion-search` with `data_source_url`) to check if a similar item already exists in `Not started` or `In progress` status. If a match exists, update it instead of creating a duplicate.
+4. **Always update Status after fixing**: When a backlog item is implemented and merged, immediately update its `Status` to `Done` (or `Staging` if merged on `staging` but not yet on `main`). When picking a ticket up, flip it to `In progress`. The Notion status must reflect reality — a stale `Not started` on a fixed ticket leads to duplicate work and incorrect quick-win audits.
+
+### Schema
+
+| Property | Type | Values |
+|----------|------|--------|
+| Name | title | Free text |
+| Type | select | `Feature`, `Bug` |
+| Priority | select | `High 🔥`, `Medium ✨`, `Low 🤞` |
+| Status | status | `Not started`, `In progress`, `Staging`, `Done`, `Archive` |
+| Assign | person | User IDs |
+| Effort | number | Fibonacci (1, 2, 3, 5, 8, 13, 21) |
+| TAG | multi_select | Free tags |
 
 ---
 

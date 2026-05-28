@@ -5,7 +5,7 @@
 
 **Status:** `Discovery` · `Specced` · `In progress` · `Shipped` · `On hold`
 **Owner:** \<name\> · **Last updated:** \<date\>
-**Discovery:** \<link to the validated discovery that justified this initiative — `../../discovery/<need>.md`\>
+**Discovery:** \<link to the validated discovery that justified this initiative — `../discovery_{name}/<need>.md`\>
 
 ## In one paragraph
 
@@ -17,6 +17,8 @@
 |-----|---------------|
 | [`executive-summary.md`](executive-summary.md) | The 2-minute TL;DR for stakeholders |
 | [`prd.md`](prd.md) | Full product spec + the need → features breakdown |
+| [`architecture.md`](architecture.md) | Cross-cutting technical architecture (DB, API, components, AI, state, auth, deployment) |
+| [`security-overview.md`](security-overview.md) | Consolidated security model (auth, RLS, threats, GDPR, secrets) |
 
 ## Feature index
 
