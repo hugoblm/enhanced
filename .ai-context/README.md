@@ -5,7 +5,7 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: 2026-05-28 against branch `feat/wizard-shell` (Dexie refactor)._
+> _Last verified: 2026-05-28 against branch `feat/conversation-engine`._
 
 > 🚧 **V1 demo deviates from `docs/initiative_wizard/prd.md`.** No Supabase, no auth, all persistence
 > in client-side Dexie (IndexedDB). See [`docs/initiative_wizard/decisions.md`](../docs/initiative_wizard/decisions.md)
@@ -20,6 +20,7 @@
 | `README.md` | Navigation + cross-cutting invariants | **always read first** |
 | `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Dexie, Vercel, OpenRouter, Tailwind |
 | `design-system.md` | Obra design tokens, colors, typography, radius | Figma, shadcn, tokens, light, dark, globals.css |
+| `conversation-engine.md` | `/api/chat` route, `useChat` setup, tool resolution, step advancement | OpenRouter, ask_user, update_prd, cards, Dexie, STEP_REQUIREMENTS |
 
 ---
 
@@ -39,27 +40,29 @@ Dexie (IndexedDB, local browser only)
 Sessions live in `Dexie` in the user's browser; an in-progress session is gone if the browser
 storage is cleared.
 
-**Status: Landing page (`/`) + wizard shell (`/session/[id]`) shipped on Dexie persistence.**
-Conversation engine, PRD live builder, AI integration, PostHog still pending.
+**Status: Landing page (`/`) + wizard shell (`/session/[id]`) + conversation engine shipped on
+Dexie persistence.** PRD live builder, PostHog still pending.
 
 ### What exists
 - Next.js 16 App Router with TypeScript strict
-- **Dexie 4 client-side DB** (`src/lib/db/dexie.ts`) — single `sessions` table, schema v1
-- shadcn/ui: Button, Tabs (Base UI–backed)
-- Zustand, Zod, React Hook Form, Vercel AI SDK, react-markdown installed
+- **Dexie 4 client-side DB** (`src/lib/db/dexie.ts`) — `sessions`, `messages`, `prdBlocks` tables
+  (schema v2)
+- shadcn/ui: Button, Tabs, Textarea, RadioGroup, Checkbox, Slider (Base UI–backed)
+- Zustand, Zod, React Hook Form, Vercel AI SDK + `@ai-sdk/react` (`useChat`), `@openrouter/ai-sdk-provider`, react-markdown installed
 - Landing page at `/` via `(marketing)` route group — PitchForm client island that **writes to Dexie**
   and client-navigates to `/session/[id]`
 - Wizard at `/session/[id]` via `(app)` route group — server validates UUID format, client hydrates
-  the Zustand store from Dexie, renders split-view (40/60 desktop, tabs < 1024px) with empty
-  conversation + PRD panels (slots for features 4/5)
+  the Zustand store from Dexie, renders split-view (40/60 desktop, tabs < 1024px)
+- **Conversation engine** in the left panel: `/api/chat` stateless route streaming OpenRouter
+  responses with `ask_user` + `update_prd` tools; cards rendered inline next to assistant
+  messages; "Continuer" advances the step when required PRD blocks are present. See
+  [`conversation-engine.md`](conversation-engine.md).
 
 ### What does NOT exist (and won't, for the demo)
 - No authentication flow (deferred-auth feature is shelved — see decisions.md)
 - No Supabase: `@supabase/*` deps removed, `src/lib/supabase/*` deleted, `supabase/migrations/*` deleted
 - No middleware (`src/middleware.ts` deleted with the Supabase removal)
-- No conversation engine (panels render placeholders)
-- No PRD live builder
-- No AI integration (prompts, tool calling)
+- No PRD live builder (the right panel is still a slot placeholder)
 - No MCP connections
 - No PostHog tracking
 
@@ -71,6 +74,7 @@ Conversation engine, PRD live builder, AI integration, PostHog still pending.
 |-------|------|------|-------------|
 | `/` | Page (SSR) | None | Landing page — PitchForm writes Dexie session + client-navigates `/session/[id]` |
 | `/session/[id]` | Page (SSR shell, client hydration) | None | Wizard shell — server validates UUID format only; client hydrates store from Dexie, renders split-view (or tabs) |
+| `/api/chat` | Route handler (Node runtime, `maxDuration = 60`) | None | Stateless: Zod-validates body, builds system prompt, `streamText` with the `ask_user`/`update_prd` tools, returns SSE via `toUIMessageStreamResponse`. Reads/writes no DB. |
 
 ### Data flow: Landing → Session
 
@@ -106,14 +110,14 @@ Browser GET /session/{id}
 
 **Step model (`wizard-store`):** `currentStep` is actual progress (1-4). `viewingStep` is what's
 displayed — diverges only when a user clicks a completed step to review it; `currentStep` is never
-rolled back. `advanceStep` will be called by the conversation-engine via
-`useWizardStore.getState().advanceStep()` when a step is completed (consumer contract for feature 4).
+rolled back. `advanceStep` is async and called by the conversation-engine via
+`useWizardStore.getState().advanceStep()` when the user confirms a step is complete.
 
 **Persistence contract:** the source of truth for a session's `rawIdea`/`currentStep`/`status` is
-the Dexie row. The Zustand store is hydrated on mount and updated optimistically. Any write that
-needs to survive a refresh must also `db.sessions.update(id, { ... })` — V1 only does that at
-session-creation time (in pitch-form), so the store and the row diverge after `advanceStep`. The
-conversation-engine feature will be responsible for the write-through.
+the Dexie row. The Zustand store is hydrated on mount and updated optimistically. `advanceStep`
+writes the new `currentStep` and `updatedAt` to `db.sessions` (best-effort: state advances even if
+the write throws — logged). Messages and PRD blocks are written by the conversation-engine to
+`db.messages` and `db.prdBlocks`. See [`conversation-engine.md`](conversation-engine.md).
 
 ---
 
@@ -121,9 +125,10 @@ conversation-engine feature will be responsible for the write-through.
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
-| _(none required at runtime in V1 demo)_ | — | All persistence is local Dexie; no AI key yet |
+| `OPENROUTER_API_KEY` | `.env.local` (dev) + Vercel env (Production + Preview, Sensitive) | Server-only; used by `/api/chat` to call OpenRouter via `@openrouter/ai-sdk-provider`. |
+| `OPENROUTER_MODEL` | optional | Overrides the default model (`anthropic/claude-sonnet-4-20250514`). |
 
-`OPENROUTER_API_KEY` will be added when the conversation-engine feature ships.
+Neither uses the `NEXT_PUBLIC_` prefix — both are server-only.
 
 ---
 
