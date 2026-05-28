@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { db } from "@/lib/db/dexie";
-import { BLOCK_TYPES } from "@/lib/prd/constants";
+import { BLOCK_TYPES, type BlockType } from "@/lib/prd/constants";
 import { useWizardStore } from "@/stores/wizard-store";
 import { PrdBlock } from "./prd-block";
 import { PrdBlockPlaceholder } from "./prd-block-placeholder";
 import { PrdHeader } from "./prd-header";
+
+// Distance from the bottom (in px) below which auto-scroll stays enabled.
+// If the user scrolls further up than this, auto-scroll pauses until they
+// come back near the bottom.
+const SCROLL_PAUSE_THRESHOLD_PX = 50;
 
 function deriveTitle(
   firstUseCase: string | null | undefined,
@@ -56,6 +61,25 @@ export function PrdViewer() {
     [blocks.first_use_case, rawIdea],
   );
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<Partial<Record<BlockType, HTMLDivElement | null>>>({});
+  const userScrolledAwayRef = useRef(false);
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    userScrolledAwayRef.current = distanceFromBottom > SCROLL_PAUSE_THRESHOLD_PX;
+  }, []);
+
+  useEffect(() => {
+    if (!lastUpdatedBlockType) return;
+    if (userScrolledAwayRef.current) return;
+    const el = blockRefs.current[lastUpdatedBlockType];
+    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [lastUpdatedBlockType]);
+
   return (
     <section
       role="region"
@@ -68,24 +92,31 @@ export function PrdViewer() {
         recommendation={recommendation}
       />
       <div
+        ref={containerRef}
+        onScroll={handleScroll}
         aria-live="polite"
         className="flex-1 overflow-y-auto px-6 py-4"
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-3">
           {BLOCK_TYPES.map((blockType) => {
             const block = blocks[blockType];
-            if (block) {
-              return (
-                <PrdBlock
-                  key={blockType}
-                  block={block}
-                  isHighlighted={lastUpdatedBlockType === blockType}
-                  onAnimationEnd={clearLastUpdated}
-                />
-              );
-            }
             return (
-              <PrdBlockPlaceholder key={blockType} blockType={blockType} />
+              <div
+                key={blockType}
+                ref={(el) => {
+                  blockRefs.current[blockType] = el;
+                }}
+              >
+                {block ? (
+                  <PrdBlock
+                    block={block}
+                    isHighlighted={lastUpdatedBlockType === blockType}
+                    onAnimationEnd={clearLastUpdated}
+                  />
+                ) : (
+                  <PrdBlockPlaceholder blockType={blockType} />
+                )}
+              </div>
             );
           })}
         </div>
