@@ -47,7 +47,8 @@
   - [ ] Submitting with an empty textarea shows an inline error message (not an alert/popup)
   - [ ] Submitting with fewer than 20 characters shows a specific message indicating the minimum length
   - [ ] The error message disappears when the user starts typing valid content
-  - [ ] The CTA button is not disabled -- the user can attempt to submit at any time (validation on submit, not on change)
+  - [ ] The CTA button is visually disabled (opacity 50%) below the 20-char threshold but remains clickable via `aria-disabled` — clicking surfaces the inline error rather than silently failing
+  - [ ] Once the typed value reaches ≥ 20 chars (after trim), the CTA returns to its normal active state
   - [ ] Focus returns to the textarea after an error so the user can immediately correct
 - **Maps to Gherkin:** SC-LP-3, SC-LP-4
 

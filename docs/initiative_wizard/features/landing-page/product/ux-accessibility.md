@@ -12,7 +12,7 @@
 1. **PM arrives on `/`** -- sees a clean, minimal page with value proposition, textarea, and CTA.
 2. **PM reads value proposition** -- understands in one sentence what Enhanced does.
 3. **PM clicks into textarea** -- placeholder text guides what to write (e.g., "Decrivez votre idee produit, le probleme que vous voulez resoudre...").
-4. **PM types their idea** -- textarea is large, comfortable. No character counter shown (no max limit). `[Assumption]` -- no counter to avoid intimidation; reconsider if PMs frequently submit near-empty ideas.
+4. **PM types their idea** -- textarea is large, comfortable. While trimmed length < 20 chars, a small "X / 20 caractères" counter sits in the composer footer (replaces what used to be a static hint) and the CTA renders with reduced opacity. Both vanish at 20+ chars.
 5. **PM clicks "Lancer le cadrage"** -- button enters loading state (spinner + disabled).
 6. **Server Action executes** -- `createSession(rawIdea, anonymousId)` creates anonymous session, generates PRD skeleton, sets cookie.
 7. **Redirect to `/session/[id]`** -- PM lands in the wizard with their idea visible in the conversation panel. Total time: < 3 seconds.
@@ -49,17 +49,18 @@
 
 ### Textarea
 
-- **Size:** Minimum 4-5 visible rows. Expandable if possible (CSS `resize: vertical` or auto-grow). `[To verify]` -- auto-grow vs. fixed height decision.
-- **Placeholder text:** Guiding, not prescriptive. E.g., "Decrivez votre idee produit : quel probleme resolvez-vous, pour qui, et pourquoi maintenant ?" `[To verify]` -- final copy.
-- **No character counter** -- no max length, no visible counter. The minimum (20 chars) is enforced only on submit.
-- **Font:** Obra body font (Geist), readable size (>= 16px to prevent iOS zoom).
+- **Size:** Fixed at `rows={6}` (~6 visible lines). No auto-resize in V1 — overflow scrolls inside the textarea. `[Evidence]` — chosen for layout stability; auto-grow can be revisited if users report friction.
+- **Placeholder text:** "Décris l'idée en quelques phrases. Aussi vague soit-elle. On la remettra en forme." — from the Obra design bundle.
+- **Live character counter:** A small `font-mono` "X / 20 caractères" appears in the composer footer **while the trimmed value is below 20 chars** and disappears at 20+. Rendered with `aria-live="polite"` so screen readers announce progress without interrupting. (Original V1 plan said "no counter"; this was changed during build because the counter anticipates the user's next move better than the post-submit error did.)
+- **Font:** Cantarell, 18px in the textarea (>= 16px so iOS doesn't zoom on focus).
 
 ### CTA button
 
-- **Label:** "Lancer le cadrage" `[To verify]` -- final CTA copy.
-- **Style:** Primary action button, Obra primary color, large padding, full-width or near-full-width.
-- **Loading state:** On click, the button shows a spinner/loading indicator and is disabled to prevent double submission.
-- **Re-enabled on error:** If the server call fails, the button returns to its normal clickable state.
+- **Label:** "Lancer le cadrage" with a right-arrow icon.
+- **Style:** shadcn `<Button size="lg">` — Obra primary color, comfortable padding, touch target ≥ 44×44px.
+- **Visually disabled below the 20-char threshold:** the CTA renders with `opacity-50` + `cursor-not-allowed` while `value.trim().length < 20`. Implemented via `aria-disabled` (not the HTML `disabled` attribute) so clicks still fire — Zod runs, the inline error surfaces, focus returns to the textarea. (Original V1 plan said "not disabled, validation on submit"; the visual disabled state was added during build to give users a clearer hint of what's missing.)
+- **Loading state:** During the in-flight server action the HTML `disabled` attribute *is* set (alongside a spinner + "Lancement…" label) to actually block double-submits.
+- **Re-enabled on error:** If the server action returns an error, the button returns to its normal state and focus moves back to the textarea.
 
 ### Loading state
 
