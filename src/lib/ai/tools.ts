@@ -24,6 +24,34 @@ export const CARD_TYPES = [
 
 export type CardType = (typeof CARD_TYPES)[number];
 
+const AskUserOutputSchema = z.discriminatedUnion("card_type", [
+  z.object({
+    card_type: z.literal("single_choice"),
+    selected: z.string(),
+    custom_text: z.string().optional(),
+  }),
+  z.object({
+    card_type: z.literal("multi_choice"),
+    selected: z.array(z.string()),
+    custom_text: z.string().optional(),
+  }),
+  z.object({
+    card_type: z.literal("scale"),
+    value: z.number(),
+  }),
+  z.object({
+    card_type: z.literal("confirmation"),
+    action: z.enum(["confirmed", "reformulate", "clarify"]),
+    text: z.string().optional(),
+  }),
+  z.object({
+    card_type: z.literal("free_text"),
+    text: z.string(),
+  }),
+]);
+
+export type AskUserOutput = z.infer<typeof AskUserOutputSchema>;
+
 export const askUserTool = tool({
   description:
     'Ask the user a structured question. ALWAYS explain WHY you are asking before calling this tool — send a text message with your reasoning first. Use the appropriate card_type based on the question nature. Include an "Autre — préciser" option in every choice card. Do not use more than 3 consecutive structured cards before returning to free text.',
@@ -45,6 +73,7 @@ export const askUserTool = tool({
       .optional()
       .describe("The text to confirm. Required for confirmation type."),
   }),
+  outputSchema: AskUserOutputSchema,
 });
 
 const EvidenceTagSchema = z.object({
@@ -86,6 +115,10 @@ export const BLOCK_SORT_ORDER: Record<BlockType, number> = {
   executive_summary: 12,
 };
 
+const UpdatePrdOutputSchema = z.object({
+  written: z.enum(BLOCK_TYPES),
+});
+
 export const updatePrdTool = tool({
   description:
     "Update a section of the PRD. Call this whenever the conversation produces information that should appear in the PRD document. Each block_type corresponds to a specific section of the PRD.",
@@ -97,6 +130,7 @@ export const updatePrdTool = tool({
       .optional()
       .describe("Evidence classification tags for claims in this section"),
   }),
+  outputSchema: UpdatePrdOutputSchema,
 });
 
 export const conversationTools = {

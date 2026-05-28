@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import {
+  type ChatAddToolOutputFunction,
   DefaultChatTransport,
-  type InferUITools,
   lastAssistantMessageIsCompleteWithToolCalls,
-  type UIMessage,
 } from "ai";
 import { useWizardStore } from "@/stores/wizard-store";
 import {
@@ -16,14 +15,13 @@ import {
   type PrdBlockRow,
 } from "@/lib/db/dexie";
 import {
+  type AskUserOutput,
   BLOCK_SORT_ORDER,
   type BlockType,
-  conversationTools,
 } from "@/lib/ai/tools";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
-
-type AppUIMessage = UIMessage<unknown, never, InferUITools<typeof conversationTools>>;
+import type { AppUIMessage } from "./types";
 
 interface UpdatePrdInput {
   block_type: BlockType;
@@ -122,15 +120,7 @@ function ConversationInner({
     [sessionId, currentStep, rawIdea],
   );
 
-  const addToolOutputRef = useRef<
-    ((args: {
-      tool: "update_prd";
-      toolCallId: string;
-      output?: { written: BlockType };
-      state?: "output-error";
-      errorText?: string;
-    }) => void) | null
-  >(null);
+  const addToolOutputRef = useRef<ChatAddToolOutputFunction<AppUIMessage> | null>(null);
 
   const persistedIds = useRef(new Set(initialMessages.map((m) => m.id)));
 
@@ -175,14 +165,19 @@ function ConversationInner({
   });
 
   useEffect(() => {
-    addToolOutputRef.current = chat.addToolOutput as unknown as (args: {
-      tool: "update_prd";
-      toolCallId: string;
-      output?: { written: BlockType };
-      state?: "output-error";
-      errorText?: string;
-    }) => void;
+    addToolOutputRef.current = chat.addToolOutput;
   }, [chat.addToolOutput]);
+
+  const handleAskUserSubmit = useCallback(
+    (toolCallId: string, output: AskUserOutput) => {
+      chat.addToolOutput({
+        tool: "ask_user",
+        toolCallId,
+        output,
+      });
+    },
+    [chat],
+  );
 
   const hasKickedOff = useRef(false);
   useEffect(() => {
@@ -207,7 +202,11 @@ function ConversationInner({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <MessageList messages={chat.messages} isStreaming={isStreaming} />
+      <MessageList
+        messages={chat.messages}
+        isStreaming={isStreaming}
+        onAskUserSubmit={handleAskUserSubmit}
+      />
       {chat.error && (
         <p className="border-t border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive">
           Une erreur est survenue. Réessaie ton dernier message.

@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { UIMessage } from "ai";
 import { Loader2 } from "lucide-react";
+import type { AskUserOutput } from "@/lib/ai/tools";
 import { MessageBubble } from "./message-bubble";
+import type { AppUIMessage } from "./types";
 
 interface Props {
-  messages: UIMessage[];
+  messages: AppUIMessage[];
   isStreaming: boolean;
+  onAskUserSubmit: (toolCallId: string, output: AskUserOutput) => void;
 }
 
-export function MessageList({ messages, isStreaming }: Props) {
+export function MessageList({ messages, isStreaming, onAskUserSubmit }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +28,11 @@ export function MessageList({ messages, isStreaming }: Props) {
           </p>
         )}
         {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
+          <MessageBubble
+            key={m.id}
+            message={m}
+            onAskUserSubmit={onAskUserSubmit}
+          />
         ))}
         {isStreaming && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
