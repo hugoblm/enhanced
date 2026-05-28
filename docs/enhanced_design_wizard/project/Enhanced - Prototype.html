@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Enhanced — Prototype V1</title>
+<meta name="viewport" content="width=1440">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #FFFFFF; }
+  body {
+    font-family: 'Cantarell', system-ui, sans-serif;
+    color: #0A0A0A;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: #E5E5E5; border-radius: 9999px; border: 2px solid #FFFFFF; }
+  *::-webkit-scrollbar-thumb:hover { background: #D4D4D4; }
+
+  #app { min-height: 100vh; }
+
+  /* Global keyframes used by streaming caret + recording pulse */
+  @keyframes caret { 50% { opacity: 0; } }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(37,99,235,0.45); }
+    70% { box-shadow: 0 0 0 12px rgba(37,99,235,0); }
+    100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Buttons in this prototype are real <button>s — kill default UA outlines, we draw our own focus */
+  button:focus { outline: none; }
+  button:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
+  textarea:focus { outline: none; }
+
+  /* Make selection brand-tinted */
+  ::selection { background: #DBEAFE; color: #1E3A8A; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div style="padding: 40px; text-align: center; color: #737373; font-family: 'Cantarell', system-ui, sans-serif;">
+    Chargement du prototype…
+  </div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Atoms from the existing UI kit -->
+<script type="text/babel" src="ui_kits/enhanced-app/components.jsx"></script>
+
+<!-- Prototype layers -->
+<script type="text/babel" src="prototype/copy.jsx"></script>
+<script type="text/babel" src="prototype/conversation.jsx"></script>
+<script type="text/babel" src="prototype/prd-doc.jsx"></script>
+<script type="text/babel" src="prototype/screens.jsx"></script>
+
+<script type="text/babel">
+  ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+</script>
+</body>
+</html>
