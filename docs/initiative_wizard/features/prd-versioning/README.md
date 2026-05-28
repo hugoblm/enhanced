@@ -1,5 +1,7 @@
 # PRD Versioning
 
+> 🚧 **V1 demo : feature reportée post-démo.** Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

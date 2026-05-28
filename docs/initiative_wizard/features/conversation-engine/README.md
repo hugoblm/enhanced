@@ -1,5 +1,8 @@
 # Conversation Engine
 
+> 🚧 **V1 demo deviation** — tools `ask_user` / `update_prd` client-resolved ; `/api/chat`
+> stateless DB ; lectures/écritures dans Dexie. Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

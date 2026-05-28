@@ -1,5 +1,8 @@
 # Executive Summary — Enhanced Wizard V1
 
+> 🚧 **V1 demo deviates from this summary** — pas d'auth magic link en V1, persistance Dexie côté
+> client. Voir [`decisions.md`](./decisions.md). Le résumé reflète la cible long terme.
+
 > The TL;DR for stakeholders. Non-technical, **2-minute read**. If someone only reads this page,
 > they should understand the need, what we're doing, the value, and the status. No jargon.
 

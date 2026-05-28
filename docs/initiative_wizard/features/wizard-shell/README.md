@@ -1,5 +1,8 @@
 # Wizard Shell
 
+> 🚧 **V1 demo deviation** — `page.tsx` réduit à la validation UUID ; hydratation Dexie côté
+> client dans `wizard-client.tsx`. Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

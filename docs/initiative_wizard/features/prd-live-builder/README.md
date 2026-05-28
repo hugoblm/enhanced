@@ -1,5 +1,8 @@
 # PRD Live Builder
 
+> 🚧 **V1 demo deviation** — la table `prd_blocks` est dans Dexie au lieu de Supabase.
+> Contrat de données stable, implémentation client-side. Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

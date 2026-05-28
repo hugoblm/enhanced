@@ -1,5 +1,9 @@
 # Architecture — Enhanced Wizard V1
 
+> 🚧 **V1 demo deviates** — pas de Supabase/Postgres/RLS en V1, persistance Dexie côté client.
+> Le schéma DB et la matrice RLS décrits ici sont la **cible long terme** (réintroduits avec
+> `deferred-auth`). Voir [`decisions.md`](./decisions.md) pour le journal des écarts.
+
 > **CANONICAL REFERENCE.** This document consolidates all technical architecture decisions
 > from the 9 feature specs. Where feature specs conflict, this document is the **source of
 > truth** and the feature specs must be updated to match. All conflicts are logged in

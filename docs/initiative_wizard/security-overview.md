@@ -1,5 +1,9 @@
 # Security Overview -- Enhanced V1
 
+> 🚧 **V1 demo deviates** — pas d'auth et pas de RLS en V1 : la persistance est 100 % Dexie côté
+> client, donc l'isolation est par navigateur. La matrice RLS et le modèle d'auth ci-dessous sont
+> la **cible long terme**. Voir [`decisions.md`](./decisions.md) pour le journal des écarts.
+
 > Canonical security document for Enhanced V1. Single source of truth for the security model,
 > authentication architecture, RLS policies, threat analysis, and data privacy posture.
 >
