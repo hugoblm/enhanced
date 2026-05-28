@@ -18,11 +18,11 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   type AskUserOutput,
-  BLOCK_SORT_ORDER,
   type BlockType,
   type ConfidenceInput,
   STEP_REQUIREMENTS,
 } from "@/lib/ai/tools";
+import { upsertPrdBlock } from "@/lib/db/prd-blocks";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 import type { AppUIMessage } from "./types";
@@ -141,7 +141,13 @@ function ConversationInner({
       const submit = addToolOutputRef.current;
       if (!submit) return;
       try {
-        await upsertPrdBlock(sessionId, currentStep, input);
+        await upsertPrdBlock({
+          sessionId,
+          blockType: input.block_type,
+          content: input.content,
+          evidenceTags: input.evidence_tags ?? [],
+          step: currentStep,
+        });
         useWizardStore.getState().updateBlock(
           input.block_type,
           input.content,
@@ -294,38 +300,6 @@ function ConversationInner({
       />
     </div>
   );
-}
-
-async function upsertPrdBlock(
-  sessionId: string,
-  step: number,
-  input: UpdatePrdInput,
-): Promise<void> {
-  const existing = await db.prdBlocks
-    .where("[sessionId+blockType]")
-    .equals([sessionId, input.block_type])
-    .first();
-
-  const now = Date.now();
-  if (existing) {
-    await db.prdBlocks.update(existing.id, {
-      content: input.content,
-      evidenceTags: input.evidence_tags ?? [],
-      step,
-      updatedAt: now,
-    });
-  } else {
-    await db.prdBlocks.put({
-      id: crypto.randomUUID(),
-      sessionId,
-      blockType: input.block_type,
-      content: input.content,
-      evidenceTags: input.evidence_tags ?? [],
-      step,
-      sortOrder: BLOCK_SORT_ORDER[input.block_type],
-      updatedAt: now,
-    });
-  }
 }
 
 function rowToUIMessage(row: MessageRow): AppUIMessage {

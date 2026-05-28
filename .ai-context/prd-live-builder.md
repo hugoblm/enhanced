@@ -4,7 +4,7 @@
 > a fixed order, fed by `update_prd` tool calls coming from the conversation engine. It is the
 > tangible artifact that makes Enhanced "a tool, not a chatbot."
 
-> _Last verified: 2026-05-28 against branch `feat/prd-live-builder`._
+> _Last verified: 2026-05-28 against branch `feat/block-refinement`._
 
 ---
 
@@ -66,12 +66,13 @@ PrdViewer useEffect on [lastUpdatedBlockType]
 
 > **Invariant — `db.prdBlocks` is the source of truth, the Zustand store mirrors it**
 > - **What:** `wizardStore.blocks` is a render-only mirror. `db.prdBlocks` rows are written
->   exclusively by `upsertPrdBlock` in `conversation.tsx`. `wizardStore.updateBlock` never
->   writes to `db.prdBlocks` — only to state.
-> - **Where:** `src/components/chat/conversation.tsx`, `src/stores/wizard-store.ts`.
+>   exclusively by `upsertPrdBlock` in `src/lib/db/prd-blocks.ts`. `wizardStore.updateBlock`
+>   never writes to `db.prdBlocks` — only to state.
+> - **Where:** `src/lib/db/prd-blocks.ts` (the helper) called from `src/components/chat/conversation.tsx`
+>   (update_prd flow) and `src/hooks/use-refine-block.ts` (refine flow). `src/stores/wizard-store.ts`.
 > - **Breaks if:** another caller writes to `db.prdBlocks` directly without going through
->   `upsertPrdBlock` (e.g. a future block-refinement that bypasses the conversation engine) and
->   forgets to call `wizardStore.updateBlock` — the store will be stale until the next reload.
+>   `upsertPrdBlock` and forgets to call `wizardStore.updateBlock` — the store will be stale
+>   until the next reload.
 
 > **Invariant — `confidence` is a structured tool field, not parsed from markdown**
 > - **What:** The `update_prd` tool input has an optional `confidence: { score, recommendation }`
@@ -108,7 +109,8 @@ PrdViewer useEffect on [lastUpdatedBlockType]
 |------|------|
 | `prd-viewer.tsx` | Client root. Hydrates Dexie, subscribes to store, owns scroll container + auto-scroll. |
 | `prd-header.tsx` | Server component. Title (with "Brouillon PRD" fallback), inline `ScoreBadge` (vert/ambre/rouge by 80/50 thresholds), disabled Export PDF / Partager buttons. `shrink-0`. |
-| `prd-block.tsx` | Client. Filled block: heading, `PrdMarkdown`, conditional evidence tag footer, disabled `Wand2` "Affiner" button. Entry animation (`animate-in fade-in slide-in-from-top-2`) + amber `ring-2` when `isHighlighted` (cleared via `onAnimationEnd` 1s timer). |
+| `prd-block.tsx` | Client. Filled block: heading, `PrdMarkdown`, conditional evidence tag footer, `Wand2` "Affiner" button wrapped in `RefinePopover` (see [`refine.md`](refine.md)). Entry animation (`animate-in fade-in slide-in-from-top-2`) + amber `ring-2` when `isHighlighted` (cleared via `onAnimationEnd` 1s timer). |
+| `refine-popover.tsx` | Client. Popover with textarea + submit hosting the refine flow. Detailed in [`refine.md`](refine.md). |
 | `prd-block-placeholder.tsx` | Server component. Dashed muted article with FR heading + "Sera rempli pendant l'étape N" hint. `data-state="empty"`. Shares heading id pattern `prd-block-${blockType}` with `PrdBlock` (no DOM collision — never rendered simultaneously for same type). |
 | `evidence-tag.tsx` | Server component. Rounded pill with FR label `[Preuve]` / `[Hypothèse]` / `[À vérifier]` (always visible — no color-only encoding) + emerald/amber/red Tailwind utilities (~8:1 WCAG AA). `role="note"` + full `aria-label`. |
 | `prd-markdown.tsx` | Client. `react-markdown` + `remark-gfm` + `rehype-sanitize` (XSS guard since content is AI-generated) with prose styles tuned for document layout (h1=text-lg, h2=text-base, h3=text-sm, table support with horizontal scroll). Distinct from `chat/message-markdown.tsx` which uses bubble-compact styles. |
