@@ -67,17 +67,17 @@ If the Supabase migration is not yet available, commits 1-4 can proceed. Commit 
 
 ## Definition of Done checklist
 
-- [ ] `src/app/(marketing)/layout.tsx` exists and renders without app chrome
-- [ ] `src/app/(marketing)/page.tsx` renders value proposition + pitch form
-- [ ] `src/components/landing/pitch-form.tsx` handles textarea, validation, loading, errors
-- [ ] `src/lib/schemas/session.ts` exports `rawIdeaSchema` with min 20 / max 5000 / trim
-- [ ] `src/app/actions/session.ts` creates session + PRD + sets cookie + redirects
-- [ ] Zod validation unit tests pass (min length, empty, whitespace, max length)
+- [~] ~~`src/app/(marketing)/layout.tsx` exists and renders without app chrome~~ — **N/A** (decision documented in tech-spec §3.1: V1 has no marketing layout, the root layout's flex-column `<body>` is sufficient)
+- [x] `src/app/(marketing)/page.tsx` renders value proposition + pitch form
+- [x] `src/components/landing/pitch-form.tsx` handles textarea, validation, loading, errors
+- [x] `src/lib/schemas/session.ts` exports `rawIdeaSchema` with min 20 / max 5000 / trim
+- [x] `src/app/actions/session.ts` creates session + PRD + sets cookie + redirects
+- [x] Zod validation unit tests pass (min length, empty, whitespace, max length) — `src/lib/schemas/__tests__/session.test.ts`, 9/9 passing
 - [ ] E2E: valid submission creates DB rows and redirects
 - [ ] E2E: empty submission shows error, no DB row created
 - [ ] E2E: short submission (< 20 chars) shows error with minimum length message
-- [ ] Responsive: textarea + CTA visible at 768px without horizontal scroll
-- [ ] Touch target: CTA button >= 44x44px
-- [ ] PostHog `landing_pitch_submitted` event fires on successful submission
-- [ ] Old `src/app/page.tsx` removed; root `/` route still works
-- [ ] `.ai-context/` updated if routes or data flows changed
+- [x] Responsive: textarea + CTA visible at 768px without horizontal scroll
+- [x] Touch target: CTA button >= 44x44px
+- [⏸] **Deferred** — PostHog `landing_pitch_submitted` event fires on successful submission. Provider not yet wired in root layout. Will land in the cross-cutting PostHog setup commit before merging to `main`. See tech-spec §6 question 4.
+- [x] Old `src/app/page.tsx` removed; root `/` route still works
+- [x] `.ai-context/` updated if routes or data flows changed

@@ -5,7 +5,7 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: 2026-05-27 against branch `feat/design-system`._
+> _Last verified: 2026-05-28 against branch `feat/landing-page`._
 
 ---
 
@@ -29,20 +29,21 @@ Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
           MCP servers (PostHog/Mixpanel/Amplitude, future)
 ```
 
-**Status: Scaffolded, no features implemented.**
+**Status: Landing page (`/`) shipped on `feat/landing-page`. Wizard, auth flow, AI integration, and PostHog instrumentation still pending.**
 
 ### What exists
 - Next.js 16 App Router with TypeScript strict
-- Supabase client (browser + server + middleware) — Magic Link auth configured, no tables yet
-- shadcn/ui initialized (Button component only)
-- Zustand, Zod, React Hook Form, Vercel AI SDK, react-markdown installed but not used
-- Single page: `/` (landing placeholder)
+- Supabase client (browser + server + middleware) — Magic Link auth configured
+- Database tables: `sessions`, `prds` with RLS (migration `20260528000000`)
+- shadcn/ui initialized (Button component)
+- Zustand, Zod, React Hook Form, Vercel AI SDK, react-markdown installed (Zod used for form validation)
+- Landing page at `/` via `(marketing)` route group — PitchForm client island + createSession server action
 - Middleware: Supabase session refresh on every request
+- Cookie `enhanced_anon_id` (httpOnly, 30-day TTL) links browser to anonymous session
 
 ### What does NOT exist yet
-- No database tables / migrations / RLS policies
-- No authentication flow (login page, auth callback)
-- No wizard UI
+- No authentication flow (login page, auth callback, deferred-auth)
+- No wizard UI (`/session/[id]` route does not exist — redirect from landing 404s)
 - No AI integration (prompts, tool calling)
 - No MCP connections
 - No PostHog tracking setup
@@ -53,7 +54,22 @@ Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
 
 | Route | Type | Auth | Description |
 |-------|------|------|-------------|
-| `/` | Page (SSG) | Public | Landing placeholder |
+| `/` | Page (SSR) | Public | Landing page — PitchForm → createSession → redirect `/session/[id]` |
+
+### Data flow: Landing → Session
+
+```
+Browser GET /
+  → (marketing)/page.tsx (Server Component: header, headline, PitchForm island)
+  → pitch-form.tsx (Client: textarea + CTA, client-side Zod validation)
+  → createSession() Server Action
+      1. Validate via rawIdeaSchema (Zod, min 20 / max 5000 chars)
+      2. Generate anonymousId (crypto.randomUUID())
+      3. INSERT sessions (anonymous_id, raw_idea, step=1, status=active)
+      4. INSERT prds (session_id, title='', is_public=false)
+      5. Set cookie enhanced_anon_id (httpOnly, 30d)
+      6. redirect(/session/{id})
+```
 
 ---
 

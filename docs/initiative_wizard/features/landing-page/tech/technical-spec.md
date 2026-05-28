@@ -29,150 +29,133 @@ The approach is intentionally minimal: no client-side routing, no global state, 
 Browser (GET /)
   |
   v
-(marketing) layout.tsx          <-- No app chrome, marketing-only layout
+root layout.tsx                 <-- Fonts, metadata, <body min-h-full flex-col>
   |
   v
-page.tsx (Server Component)     <-- SSR: value prop + pitch-form island
+(marketing)/page.tsx            <-- SSR: header, eyebrow, h1, PitchForm, WhatSection, footer
   |
   v
-pitch-form.tsx ("use client")   <-- Textarea + CTA button + form state
+pitch-form.tsx ("use client")   <-- Composer + counter + CTA + form state
   |
   v (form submit)
 createSession() Server Action   <-- src/app/actions/session.ts
   |
-  +-- Validate input (Zod)
-  +-- Generate anonymousId (crypto.randomUUID())
-  +-- INSERT sessions (anonymous_id, raw_idea, current_step=1, status='active')
-  +-- INSERT prds (session_id, title='', share_slug=null)
-  +-- Set httpOnly cookie "enhanced_anon_id" = anonymousId
+  +-- Validate input (Zod) — also runs client-side first
+  +-- Pre-generate sessionId + anonymousId (crypto.randomUUID())
+  +-- INSERT sessions (id, anonymous_id, raw_idea, current_step=1, status='active')
+  +-- INSERT prds (session_id, title='', is_public=false)  // best-effort
+  +-- Set httpOnly cookie "enhanced_anon_id" = anonymousId  (30-day TTL)
   +-- redirect(`/session/${sessionId}`)
 ```
 
 ### Route group
 
-The `(marketing)` route group provides a layout without the app shell (no sidebar, no wizard chrome). This layout is separate from the `(app)` route group that holds `/session/[id]`.
+The `(marketing)` route group exists for URL grouping. V1 has no `(marketing)/layout.tsx` — the root layout's flex-column body is sufficient. The future `(app)` route group will host `/session/[id]` (wizard-shell feature).
 
 ```
 src/app/
+  layout.tsx               <-- Root layout (only one for V1)
   (marketing)/
-    layout.tsx          <-- Marketing layout (header? footer? minimal)
-    page.tsx            <-- Landing page
+    page.tsx               <-- Landing page (this feature)
   (app)/
-    session/[id]/       <-- Wizard (separate feature)
+    session/[id]/          <-- Wizard (separate feature, not yet shipped)
 ```
 
 ---
 
 ## 3. Detailed specs
 
-### 3.1 Route: `src/app/(marketing)/layout.tsx`
+### 3.1 Route group: `src/app/(marketing)/`
 
-A minimal layout that wraps only the landing page. No app-level navigation. Inherits the root layout (fonts, metadata, globals.css).
+The `(marketing)` route group exists for URL grouping (so future marketing routes — `/manifesto`, `/changelog`, etc. — can share a layout independently from the wizard). For V1 the group **has no `layout.tsx`** — the root layout's `<body className="min-h-full flex flex-col">` already provides the flex-column container, and adding a marketing-specific layout would have been an identical no-op wrapper. The landing page sits directly at `src/app/(marketing)/page.tsx`.
 
-```tsx
-// src/app/(marketing)/layout.tsx
-export default function MarketingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center">
-      {children}
-    </main>
-  );
-}
-```
+A `(marketing)/layout.tsx` will be re-introduced if/when marketing pages need a shared header/footer that the landing page doesn't render itself.
 
 ### 3.2 Page: `src/app/(marketing)/page.tsx`
 
-Server Component. Renders:
-1. Value proposition text (above the fold, max 2 sentences)
-2. `<PitchForm />` client island
+Server Component. Renders the full Obra-style landing in a centered single-column layout (max-width ~740px) inside the root layout's flex-column `<body>`. From top to bottom:
 
-```tsx
-// src/app/(marketing)/page.tsx
-import { PitchForm } from "@/components/landing/pitch-form";
+1. **Header** — logo + wordmark, nav links ("Drafts publics", "Manifeste" — `href="#"` in V1), FR/EN language toggle (display-only, not wired), and a "Se connecter" outline button (also display-only).
+2. **Eyebrow pill** — black "V1" badge + tagline ("Pour les équipes qui buildent 10x plus vite…").
+3. **H1** — Kedebideri 600, 56px desktop (36px below `md`), tracking `-2px`, two lines.
+4. **`<PitchForm />` client island** — the composer card.
+5. **WhatSection** — two-column grid (`Ce qu'Enhanced fait` / `Ce que ce n'est pas`), check / X icons, body text.
+6. **Footer** — mono caption with the project tagline.
 
-export default function LandingPage() {
-  return (
-    <section className="w-full max-w-2xl mx-auto px-4 py-16 text-center">
-      <h1 className="font-heading text-4xl md:text-5xl tracking-tight mb-4">
-        {/* Value proposition headline */}
-      </h1>
-      <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
-        {/* Supporting sentence: what you do, what you get */}
-      </p>
-      <PitchForm />
-    </section>
-  );
-}
-```
+The page is fully static-prerendered (`○` in `next build`), no client JS beyond the PitchForm island.
+
+> **V1 trims (deviation from the original prototype):** the voice-note mic button and the "Quelques drafts récents" public-drafts strip are removed. V1 has no voice input and no real public PRDs to show; fake examples would mislead the first visitors.
+
+**SEO metadata** is set via `export const metadata` (title, description). OpenGraph / Twitter card / JSON-LD are intentionally deferred to a later commit before merging to `main` (see release-plan §"Manques additionnels pour main").
 
 **SEO metadata** is set via `export const metadata` in this file (title, description, OG tags).
 
 ### 3.3 Component: `src/components/landing/pitch-form.tsx`
 
-Client Component (`"use client"`). Contains:
+Client Component (`"use client"`). Composer-style card matching the Obra prototype.
 
 | Element | Details |
 |---------|---------|
-| `<textarea>` | Auto-resizing, placeholder text, `min-h-[120px]`, `max-h-[300px]` |
-| CTA button | shadcn `<Button>`, label "Lancer le cadrage", `size="lg"` |
-| Error display | `<p>` below textarea, conditional render, `text-destructive` |
-| Loading state | `useTransition()` for pending state, button shows spinner + disabled |
+| Composer card | `rounded-2xl` container, focus state thickens the border and adds a soft shadow |
+| `<textarea>` | Controlled (`value` state), `rows={6}`, Cantarell 18px, transparent background inside the card |
+| Footer bar | Flex row separated by a top border; holds the live counter (left) and the CTA (right) |
+| Live counter | Renders `{value.trim().length} / 20 caractères` while below threshold; **disappears at 20+** |
+| CTA button | shadcn `<Button size="lg">`, label "Lancer le cadrage", arrow-right icon. **Visually disabled** (opacity 50% + `cursor-not-allowed`) while below 20 chars or in-flight |
+| Error display | `<p role="alert">` below the card, linked to the textarea via `aria-describedby` |
 
-**Auto-resize behavior:** The textarea uses a `useEffect` + `onInput` handler that sets `style.height` to `scrollHeight`. Capped at `max-h-[300px]` with `overflow-y: auto` beyond that.
+**Disabled-CTA strategy.** The CTA uses `aria-disabled={isCtaInactive}` (not the HTML `disabled` attribute) when the user is below 20 chars — clicks still fire so the form submits, Zod fails, and the inline error appears. The HTML `disabled` attribute is only set during `isPending` to actually block double-submits in-flight. This gives the user a clear visual hint without trapping screen-reader users.
 
-**Form state:**
+**Error clearing.** The error message clears as soon as the user starts typing again — the `onChange` handler resets both `value` and (if set) `error`.
+
+**Form state (shape):**
 
 ```tsx
 "use client";
 
-import { useTransition, useState } from "react";
-import { useRouter } from "next/navigation";
+import { type SyntheticEvent, useRef, useState, useTransition } from "react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSession } from "@/app/actions/session";
+import { rawIdeaSchema } from "@/lib/schemas/session";
+import { cn } from "@/lib/utils";
+
+const MIN_CHARS = 20;
 
 export function PitchForm() {
+  const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  function handleSubmit(formData: FormData) {
+  const isBelowMin = value.trim().length < MIN_CHARS;
+  const isCtaInactive = isBelowMin || isPending;
+
+  function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const parsed = rawIdeaSchema.safeParse({ rawIdea: formData.get("rawIdea") });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0].message);
+      textareaRef.current?.focus();
+      return;
+    }
+
     startTransition(async () => {
       const result = await createSession(formData);
-      if (result.error) {
+      if (result?.error) {
         setError(result.error);
+        textareaRef.current?.focus();
       }
       // redirect happens inside the server action on success
     });
   }
-
-  return (
-    <form action={handleSubmit} className="flex flex-col gap-4 w-full">
-      <textarea
-        name="rawIdea"
-        placeholder="Decrivez votre idee produit..."
-        className="..."
-        onChange={() => error && setError(null)}
-        required
-      />
-      {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
-      <Button type="submit" size="lg" disabled={isPending}>
-        {isPending ? "Lancement..." : "Lancer le cadrage"}
-      </Button>
-    </form>
-  );
+  // ...JSX renders the composer card, counter, CTA, and error <p>
 }
 ```
 
-**Error clearing:** The error message disappears on any `onChange` event in the textarea (maps to SC-LP-5).
+Maps to Gherkin SC-LP-3 (empty), SC-LP-4 (too-short), SC-LP-5 (clear on type), SC-LP-6 (server error preserves input + re-enables CTA).
 
 ### 3.4 Server Action: `src/app/actions/session.ts`
 
@@ -193,32 +176,37 @@ export async function createSession(formData: FormData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  // 2. Generate anonymous identity
+  // 2. Pre-generate both UUIDs server-side. We *cannot* use
+  //    .insert().select() because supabase-js then asks PostgREST for a
+  //    RETURNING clause, which is filtered through the SELECT RLS policy.
+  //    Our select_own_sessions policy can't match anon rows (no JWT claim
+  //    to compare against), so the call would 42501 even though the
+  //    INSERT itself is valid. Generating the IDs locally lets us skip
+  //    .select() entirely and still know the redirect target.
+  const sessionId = crypto.randomUUID();
   const anonymousId = crypto.randomUUID();
 
   // 3. Create session + PRD in a transaction-like sequence
   const supabase = await createClient();
 
-  const { data: session, error: sessionError } = await supabase
-    .from("sessions")
-    .insert({
-      anonymous_id: anonymousId,
-      user_id: null,
-      raw_idea: parsed.data.rawIdea,
-      current_step: 1,
-      status: "active",
-    })
-    .select("id")
-    .single();
+  const { error: sessionError } = await supabase.from("sessions").insert({
+    id: sessionId,
+    anonymous_id: anonymousId,
+    user_id: null,
+    raw_idea: parsed.data.rawIdea,
+    current_step: 1,
+    status: "active",
+  });
 
-  if (sessionError || !session) {
+  if (sessionError) {
+    console.error("[createSession] sessions.insert failed:", sessionError);
     return {
-      error: "Impossible de creer la session. Veuillez reessayer.",
+      error: "Impossible de créer la session. Veuillez réessayer.",
     };
   }
 
   const { error: prdError } = await supabase.from("prds").insert({
-    session_id: session.id,
+    session_id: sessionId,
     user_id: null,
     title: "",
     is_public: false,
@@ -227,7 +215,7 @@ export async function createSession(formData: FormData) {
   if (prdError) {
     // Best effort: session exists but PRD failed. Still redirect.
     // The wizard can create the PRD later if missing.
-    console.error("PRD creation failed:", prdError);
+    console.error("[createSession] prds.insert failed:", prdError);
   }
 
   // 4. Set anonymous cookie
@@ -241,7 +229,7 @@ export async function createSession(formData: FormData) {
   });
 
   // 5. Redirect to wizard
-  redirect(`/session/${session.id}`);
+  redirect(`/session/${sessionId}`);
 }
 ```
 
@@ -322,12 +310,13 @@ This runs client-side after the redirect completes (or in a `useEffect` on the w
 
 ---
 
-## 6. Open questions [To verify]
+## 6. Open questions
 
-| # | Question | Impact | Resolved? |
-|---|----------|--------|-----------|
-| 1 | Final copy for value proposition headline and supporting text | UX / messaging | No |
-| 2 | Placeholder text for the textarea | UX | No |
-| 3 | Should the existing `src/app/page.tsx` be moved or replaced? | File organization | No -- recommended: delete `src/app/page.tsx` and use `src/app/(marketing)/page.tsx` |
-| 4 | PostHog provider setup -- is it already configured in root layout? | Analytics instrumentation | No -- needs to be added as a dependency task |
-| 5 | Does the Supabase schema (sessions, prds tables) exist yet? | DB dependency | No -- migration must run before this feature works end-to-end |
+| # | Question | Impact | Status |
+|---|----------|--------|--------|
+| 1 | Final copy for value proposition headline and supporting text | UX / messaging | ✅ Resolved — copy taken from `COPY.fr.landing` in the design bundle |
+| 2 | Placeholder text for the textarea | UX | ✅ Resolved — "Décris l'idée en quelques phrases…" from the design bundle |
+| 3 | Should the existing `src/app/page.tsx` be moved or replaced? | File organization | ✅ Resolved — deleted in the first commit, replaced by `src/app/(marketing)/page.tsx` |
+| 4 | PostHog provider setup — is it already configured in root layout? | Analytics instrumentation | ❌ **Deferred** — no PostHog provider in V1. `landing_pitch_submitted` event will be added when the cross-cutting PostHog setup lands (separate commit or alongside a later feature) |
+| 5 | Does the Supabase schema (`sessions`, `prds` tables) exist yet? | DB dependency | ✅ Resolved — migration `20260528000000_create_sessions_and_prds.sql` applied on Supabase Cloud |
+| 6 | Were anon RLS inserts going to work as planned? | Security / function | ⚠️ **Surfaced during build** — `.insert().select()` triggered the SELECT RLS policy on the RETURNING clause, blocking the call. Workaround: pre-generate UUIDs server-side so `.select()` is no longer needed (see §3.4). Documented in migrations 010000 / 020000 / 030000 / 040000. |

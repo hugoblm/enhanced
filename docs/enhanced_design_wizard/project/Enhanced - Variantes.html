@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Enhanced — Variantes</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Cantarell', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  @keyframes caret { 50% { opacity: 0; } }
+  *::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="prototype/design-canvas.jsx"></script>
+<script type="text/babel" src="ui_kits/enhanced-app/components.jsx"></script>
+<script type="text/babel" src="prototype/copy.jsx"></script>
+<script type="text/babel" src="prototype/conversation.jsx"></script>
+<script type="text/babel" src="prototype/prd-doc.jsx"></script>
+
+<script type="text/babel">
+const V = window.ENHANCED_TOKENS;
+const copyFR = window.ENHANCED_COPY.fr;
+
+// ===========================================================
+// Mini PRD doc — compact version for artboards
+// ===========================================================
+function MiniPRD({ height = 720, version = 1 }) {
+  return (
+    <div style={{
+      height, overflow: 'hidden', background: '#FAFAFA',
+      borderLeft: '1px solid #E5E5E5',
+    }}>
+      <div style={{
+        padding: '14px 22px', borderBottom: '1px solid #E5E5E5', background: '#FAFAFA',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <Icon name="fileText" size={12} color="#737373" />
+        <div style={{ fontFamily: V.fontUI, fontSize: 12, fontWeight: 600, color: '#0A0A0A' }}>Draft PRD</div>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3' }}>v{version}</span>
+      </div>
+      <div style={{ padding: '22px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div>
+          <Badge tone="brand">Draft · v{version}</Badge>
+        </div>
+        <h2 style={{
+          fontFamily: V.fontHeading, fontWeight: 600, fontSize: 20,
+          letterSpacing: '-0.6px', lineHeight: '24px', color: '#0A0A0A',
+          marginTop: 0, marginBottom: 4, textWrap: 'balance',
+        }}>Recherches sauvegardées pour les power users</h2>
+        <p style={{
+          fontFamily: V.fontSans, fontSize: 13, lineHeight: '19px', color: '#404040',
+          marginTop: 0, marginBottom: 0,
+        }}>Une manière pour les power users de conserver leurs combinaisons de filtres entre les sessions.</p>
+
+        <div style={{
+          background: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: 8,
+          padding: '12px 14px', marginTop: 8,
+        }}>
+          <div style={{
+            fontFamily: V.fontUI, fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase',
+            color: '#737373', fontWeight: 500, marginBottom: 6,
+          }}>Problème utilisateur</div>
+          <div style={{
+            fontFamily: V.fontSans, fontStyle: 'italic', fontSize: 12.5, lineHeight: '18px', color: '#404040',
+          }}>Je suis un power user, et quand je reviens sur Insights, mes filtres sont reset.</div>
+        </div>
+
+        <div style={{
+          background: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: 8,
+          padding: '12px 14px',
+        }}>
+          <div style={{
+            fontFamily: V.fontUI, fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase',
+            color: '#737373', fontWeight: 500, marginBottom: 6,
+          }}>Contexte data</div>
+          <div style={{ fontFamily: V.fontSans, fontSize: 12.5, lineHeight: '18px', color: '#262626' }}>
+            <PRDTag kind="evidence" copy={copyFR.prd} /> Power users <strong>4.2x/session</strong> · 90j.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Mini convo pane
+// ===========================================================
+function MiniConvo({ height = 720, density = 'subtle' }) {
+  return (
+    <div style={{ height, overflow: 'hidden', background: '#FFFFFF' }}>
+      <div style={{
+        padding: '14px 22px', borderBottom: '1px solid #F5F5F5',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <span style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3' }}>Étape 1 / 4</span>
+        <div style={{ fontFamily: V.fontUI, fontSize: 12, fontWeight: 600, color: '#0A0A0A' }}>Cadrage</div>
+      </div>
+      <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <AIAvatar size={22} />
+          <div style={{ fontFamily: V.fontSans, fontSize: 13, lineHeight: '19px', color: '#262626', flex: 1 }}>
+            Cette reformulation te paraît juste ?
+          </div>
+        </div>
+        {density === 'subtle' && (
+          <div style={{ paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3', marginBottom: 4 }}>
+              <span style={{ display:'inline-block', width:5, height:5, borderRadius:9999, background:'#2563EB', marginRight:5, verticalAlign:'middle' }}/>
+              ask_user · confirmation
+            </div>
+            <button style={{
+              textAlign: 'left', padding: '8px 12px', background: '#171717', color: '#FAFAFA',
+              border: '1px solid #171717', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+            }}>Oui, c'est juste</button>
+            <button style={{
+              textAlign: 'left', padding: '8px 12px', background: '#FFFFFF', color: '#262626',
+              border: '1px solid #E5E5E5', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+            }}>Reformule</button>
+            <button style={{
+              textAlign: 'left', padding: '8px 12px', background: '#FFFFFF', color: '#262626',
+              border: '1px solid #E5E5E5', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+            }}>Précise</button>
+          </div>
+        )}
+        {density === 'affirm' && (
+          <div style={{ paddingLeft: 32 }}>
+            <div style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3', marginBottom: 6 }}>
+              <span style={{ display:'inline-block', width:5, height:5, borderRadius:9999, background:'#2563EB', marginRight:5, verticalAlign:'middle' }}/>
+              ask_user · confirmation
+            </div>
+            <div style={{
+              background: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: 10,
+              padding: 12, boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)',
+            }}>
+              <div style={{ fontFamily: V.fontUI, fontSize: 12, fontWeight: 500, color: '#171717', marginBottom: 10 }}>
+                Cette reformulation te paraît juste ?
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button style={{
+                  padding: '6px 12px', background: '#171717', color: '#FFFFFF',
+                  border: 'none', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}><Icon name="check" size={11} stroke={2.5} /> Oui</button>
+                <button style={{
+                  padding: '6px 12px', background: '#FFFFFF', color: '#262626',
+                  border: '1px solid #E5E5E5', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+                }}>Reformule</button>
+                <button style={{
+                  padding: '6px 12px', background: '#FFFFFF', color: '#262626',
+                  border: '1px solid #E5E5E5', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+                }}>Précise</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {density === 'inline' && (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <AIAvatar size={22} />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+              <button style={{
+                padding: '6px 12px', background: '#EFF6FF', color: '#1D4ED8',
+                border: '1px solid #BFDBFE', borderRadius: 9999, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+              }}>Oui, c'est juste</button>
+              <button style={{
+                padding: '6px 12px', background: '#FFFFFF', color: '#525252',
+                border: '1px solid #E5E5E5', borderRadius: 9999, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+              }}>Reformule</button>
+              <button style={{
+                padding: '6px 12px', background: '#FFFFFF', color: '#525252',
+                border: '1px solid #E5E5E5', borderRadius: 9999, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+              }}>Précise</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
+// Split-view variant
+// ===========================================================
+function SplitVariant({ leftPct, rightPct, width = 880, height = 560, density = 'subtle', drawer = false }) {
+  return (
+    <div style={{
+      width, height, background: '#FFFFFF',
+      borderTop: `40px solid #0A0A0A`, overflow: 'hidden', position: 'relative',
+    }}>
+      {/* topbar */}
+      <div style={{
+        position: 'absolute', top: -32, left: 12, color: '#FAFAFA',
+        fontFamily: V.fontHeading, fontSize: 12, fontWeight: 600,
+      }}>enhanced.pm</div>
+      <div style={{
+        position: 'absolute', top: -28, left: 140, display: 'flex', gap: 10,
+        fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3',
+      }}>
+        <span>● Cadrage</span>
+        <span>○ Data</span>
+        <span>○ Risques</span>
+        <span>○ Draft</span>
+      </div>
+
+      {drawer ? (
+        <div style={{ display: 'flex', height: '100%' }}>
+          <div style={{ flex: 1 }}>
+            <MiniPRD height={height} />
+          </div>
+          <div style={{
+            width: 360, background: '#FFFFFF', borderLeft: '1px solid #E5E5E5',
+            boxShadow: '-8px 0 24px -4px rgba(0,0,0,0.06)',
+          }}>
+            <MiniConvo height={height} density={density} />
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid', gridTemplateColumns: `${leftPct}fr ${rightPct}fr`, height: '100%',
+        }}>
+          <MiniConvo height={height} density={density} />
+          <MiniPRD height={height} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===========================================================
+// ask_user variant artboard
+// ===========================================================
+function AskVariant({ kind, width = 360, height = 320 }) {
+  return (
+    <div style={{
+      width, height, background: '#FFFFFF', padding: 20,
+      display: 'flex', flexDirection: 'column', gap: 14,
+      borderRadius: 4,
+    }}>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <AIAvatar size={22} />
+        <div style={{ fontFamily: V.fontSans, fontSize: 13, lineHeight: '19px', color: '#262626' }}>
+          {kind === 'scale' ? "Niveau de confiance sur la faisabilité technique ?" :
+           kind === 'single' ? "Quel profil utilisateur cible ?" :
+           kind === 'multi' ? "Quelles métriques surveilles-tu ?" :
+           "Cette reformulation te paraît juste ?"}
+        </div>
+      </div>
+      {kind === 'scale' && (
+        <div style={{ paddingLeft: 32 }}>
+          <div style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3', marginBottom: 6 }}>
+            <span style={{ display:'inline-block', width:5, height:5, borderRadius:9999, background:'#2563EB', marginRight:5, verticalAlign:'middle' }}/>
+            ask_user · échelle 1–5
+          </div>
+          <div style={{
+            background: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: 12,
+            padding: 14, boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)',
+          }}>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {[1,2,3,4,5].map(n => (
+                <div key={n} style={{
+                  flex: 1, height: 38,
+                  background: n === 3 ? '#2563EB' : '#FFFFFF',
+                  color: n === 3 ? '#FFFFFF' : '#171717',
+                  border: `1px solid ${n === 3 ? '#2563EB' : '#E5E5E5'}`,
+                  borderRadius: 6,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: V.fontUI, fontWeight: 600, fontSize: 14,
+                }}>{n}</div>
+              ))}
+            </div>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', marginTop: 8,
+              fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3',
+            }}>
+              <span>1 · Très faible</span>
+              <span>5 · Très élevée</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {kind === 'single' && (
+        <div style={{ paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3', marginBottom: 4 }}>
+            <span style={{ display:'inline-block', width:5, height:5, borderRadius:9999, background:'#2563EB', marginRight:5, verticalAlign:'middle' }}/>
+            ask_user · choix unique
+          </div>
+          {['Power users tier_pro', 'Nouveaux signups', 'Enterprise admins', 'Autre — préciser'].map((opt, i) => (
+            <button key={i} style={{
+              textAlign: 'left', padding: '8px 12px',
+              background: i === 0 ? '#171717' : '#FFFFFF',
+              color: i === 0 ? '#FAFAFA' : '#262626',
+              border: `1px solid ${i === 0 ? '#171717' : '#E5E5E5'}`,
+              borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{
+                width: 14, height: 14, borderRadius: 9999, flexShrink: 0,
+                border: `1.5px solid ${i === 0 ? '#FAFAFA' : '#D4D4D4'}`,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {i === 0 && <span style={{ width: 6, height: 6, borderRadius: 9999, background: '#FAFAFA' }} />}
+              </span>
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+      {kind === 'multi' && (
+        <div style={{ paddingLeft: 32 }}>
+          <div style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3', marginBottom: 6 }}>
+            <span style={{ display:'inline-block', width:5, height:5, borderRadius:9999, background:'#2563EB', marginRight:5, verticalAlign:'middle' }}/>
+            ask_user · choix multiples
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {[{name:'Rétention',on:true},{name:'Activation',on:true},{name:'Conversion',on:false},{name:'NPS',on:false},{name:'Churn',on:false},{name:'Autre',on:false}].map((opt, i) => (
+              <button key={i} style={{
+                padding: '6px 12px',
+                background: opt.on ? '#171717' : '#FFFFFF',
+                color: opt.on ? '#FAFAFA' : '#262626',
+                border: `1px solid ${opt.on ? '#171717' : '#E5E5E5'}`,
+                borderRadius: 6, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}>
+                <span style={{
+                  width: 12, height: 12, borderRadius: 2, flexShrink: 0,
+                  border: `1.5px solid ${opt.on ? '#FAFAFA' : '#D4D4D4'}`,
+                  background: opt.on ? '#FAFAFA' : 'transparent',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {opt.on && <Icon name="check" size={8} color="#171717" stroke={3} />}
+                </span>
+                {opt.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {kind === 'confirm' && (
+        <div style={{ paddingLeft: 32 }}>
+          <div style={{ fontFamily: V.fontMono, fontSize: 10, color: '#A3A3A3', marginBottom: 6 }}>
+            <span style={{ display:'inline-block', width:5, height:5, borderRadius:9999, background:'#2563EB', marginRight:5, verticalAlign:'middle' }}/>
+            ask_user · confirmation
+          </div>
+          <div style={{
+            background: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: 10,
+            padding: 12, boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)',
+          }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button style={{
+                padding: '8px 14px', background: '#171717', color: '#FFFFFF',
+                border: 'none', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+              }}><Icon name="check" size={11} stroke={2.5} /> Oui, c'est juste</button>
+              <button style={{
+                padding: '8px 14px', background: '#FFFFFF', color: '#262626',
+                border: '1px solid #E5E5E5', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+              }}>Reformule</button>
+              <button style={{
+                padding: '8px 14px', background: '#FFFFFF', color: '#262626',
+                border: '1px solid #E5E5E5', borderRadius: 8, fontFamily: V.fontUI, fontSize: 12, fontWeight: 500,
+              }}>Précise</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===========================================================
+// PRD tag variant — show 3 ways to surface [Evidence]/[Assumption]/[To verify]
+// ===========================================================
+function TagVariant({ kind, width = 480, height = 380 }) {
+  return (
+    <div style={{
+      width, height, background: '#FFFFFF', padding: 24,
+      display: 'flex', flexDirection: 'column', gap: 12,
+    }}>
+      <div style={{
+        fontFamily: V.fontUI, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
+        color: '#737373', fontWeight: 500,
+      }}>Contexte data</div>
+
+      {kind === 'inline-pills' && (
+        <>
+          <p style={{ margin: 0, fontFamily: V.fontSans, fontSize: 14, lineHeight: '21px', color: '#262626' }}>
+            <PRDTag kind="evidence" copy={copyFR.prd} />
+            Power users (tier_pro) ouvrent la vue filtrée Insights <strong>4.2x par session</strong> en moyenne sur 90 jours.
+          </p>
+          <p style={{ margin: 0, fontFamily: V.fontSans, fontSize: 14, lineHeight: '21px', color: '#262626' }}>
+            <PRDTag kind="toverify" copy={copyFR.prd} />
+            Taux de re-saisie de la même combinaison de filtres en moins de 90 s — à mesurer avant build.
+          </p>
+          <p style={{ margin: 0, fontFamily: V.fontSans, fontSize: 14, lineHeight: '21px', color: '#262626' }}>
+            <PRDTag kind="assumption" copy={copyFR.prd} />
+            Que cette friction est prioritaire pour la cible, pas un irritant secondaire.
+          </p>
+        </>
+      )}
+
+      {kind === 'rail' && (
+        <>
+          {[
+            { tag: 'evidence', text: 'Power users (tier_pro) ouvrent la vue filtrée Insights 4.2x par session.' },
+            { tag: 'toverify', text: 'Taux de re-saisie de la même combinaison en moins de 90 s — à mesurer.' },
+            { tag: 'assumption', text: 'Que cette friction est prioritaire pour la cible, pas un irritant secondaire.' },
+          ].map((it, i) => {
+            const color = it.tag === 'evidence' ? '#2563EB' : it.tag === 'assumption' ? '#D97706' : '#737373';
+            const bg = it.tag === 'evidence' ? '#EFF6FF' : it.tag === 'assumption' ? '#FFFBEB' : '#FAFAFA';
+            const label = it.tag === 'evidence' ? 'Evidence' : it.tag === 'assumption' ? 'Assumption' : 'To verify';
+            return (
+              <div key={i} style={{ display: 'flex', gap: 12 }}>
+                <div style={{
+                  width: 4, background: color, borderRadius: 2, flexShrink: 0,
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontFamily: V.fontMono, fontSize: 10.5, fontWeight: 500, color, marginBottom: 4,
+                    padding: '1px 7px', background: bg, borderRadius: 4, display: 'inline-block',
+                  }}>{label}</div>
+                  <div style={{ fontFamily: V.fontSans, fontSize: 14, lineHeight: '20px', color: '#262626' }}>{it.text}</div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {kind === 'gutter' && (
+        <>
+          {[
+            { tag: 'evidence', text: 'Power users (tier_pro) ouvrent la vue filtrée Insights 4.2x par session.' },
+            { tag: 'toverify', text: 'Taux de re-saisie de la même combinaison en moins de 90 s.' },
+            { tag: 'assumption', text: 'Que cette friction est prioritaire pour la cible.' },
+          ].map((it, i) => {
+            const color = it.tag === 'evidence' ? '#1D4ED8' : it.tag === 'assumption' ? '#92400E' : '#525252';
+            const label = it.tag === 'evidence' ? 'EVD' : it.tag === 'assumption' ? 'ASM' : 'TV';
+            return (
+              <div key={i} style={{ display: 'flex', gap: 12, paddingLeft: 0 }}>
+                <div style={{
+                  fontFamily: V.fontMono, fontSize: 10, fontWeight: 600, color, letterSpacing: 0.8,
+                  width: 32, paddingTop: 2, flexShrink: 0, textAlign: 'right',
+                }}>{label}</div>
+                <div style={{
+                  width: 1, background: '#E5E5E5', flexShrink: 0,
+                }} />
+                <div style={{ flex: 1, fontFamily: V.fontSans, fontSize: 14, lineHeight: '20px', color: '#262626' }}>{it.text}</div>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===========================================================
+// ROOT
+// ===========================================================
+function App() {
+  return (
+    <DesignCanvas
+      title="Enhanced — Variantes"
+      subtitle="Explorations spécifiques · à valider, mixer, et brancher dans le prototype principal."
+      initialZoom={0.7}
+    >
+      <DCSection
+        id="split"
+        title="Layout du split-view"
+        subtitle="Trois ratios + une variante drawer. La conversation est toujours à gauche, le PRD à droite."
+      >
+        <DCArtboard id="s-4555" label="A · 45/55 — recommandé" width={880} height={560}>
+          <SplitVariant leftPct={45} rightPct={55} density="subtle" />
+        </DCArtboard>
+        <DCArtboard id="s-5050" label="B · 50/50 — équilibré" width={880} height={560}>
+          <SplitVariant leftPct={50} rightPct={50} density="subtle" />
+        </DCArtboard>
+        <DCArtboard id="s-3565" label="C · 35/65 — PRD-first" width={880} height={560}>
+          <SplitVariant leftPct={35} rightPct={65} density="subtle" />
+        </DCArtboard>
+        <DCArtboard id="s-drawer" label="D · Drawer — PRD plein écran, conversation en panneau" width={880} height={560}>
+          <SplitVariant drawer density="affirm" />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="ask"
+        title="Cartes ask_user — formats"
+        subtitle="Quatre types de questions structurées. Discret pour choix simples, affirmé pour confirmations et échelles."
+      >
+        <DCArtboard id="a-single" label="A · Choix unique (discret)" width={360} height={300}>
+          <AskVariant kind="single" />
+        </DCArtboard>
+        <DCArtboard id="a-multi" label="B · Choix multiples (discret)" width={360} height={260}>
+          <AskVariant kind="multi" height={260} />
+        </DCArtboard>
+        <DCArtboard id="a-scale" label="C · Échelle 1–5 (affirmé)" width={360} height={240}>
+          <AskVariant kind="scale" height={240} />
+        </DCArtboard>
+        <DCArtboard id="a-confirm" label="D · Confirmation (affirmé)" width={360} height={220}>
+          <AskVariant kind="confirm" height={220} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="tags"
+        title="Tags [Evidence] / [Assumption] / [To verify]"
+        subtitle="Trois façons de marquer le niveau de preuve dans le PRD. Inline reste le plus dense et le plus document-grade."
+      >
+        <DCArtboard id="t-inline" label="A · Pills inline — recommandé" width={480} height={300}>
+          <TagVariant kind="inline-pills" height={300} />
+        </DCArtboard>
+        <DCArtboard id="t-rail" label="B · Rail couleur à gauche" width={480} height={300}>
+          <TagVariant kind="rail" height={300} />
+        </DCArtboard>
+        <DCArtboard id="t-gutter" label="C · Gouttière typographique (très éditorial)" width={480} height={300}>
+          <TagVariant kind="gutter" height={300} />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+</script>
+</body>
+</html>
