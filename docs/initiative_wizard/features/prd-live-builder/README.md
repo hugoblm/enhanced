@@ -5,8 +5,8 @@
 
 > One-screen overview.
 
-**Status:** `Planned`
-**Owner:** Hugo · **Last updated:** 2026-05-27
+**Status:** `Implemented (V1 Dexie)` — refinement, PDF export, public sharing, versioning still pending.
+**Owner:** Hugo · **Last updated:** 2026-05-28
 **Part of initiative:** [`../../README.md`](../../README.md) · **PRD:** [`../../prd.md`](../../prd.md)
 
 ## In one paragraph
@@ -29,4 +29,6 @@ The PRD Live Builder is the right panel of the wizard: the artifact that makes E
 
 ## Current state / next step
 
-No implementation yet. No `prds` or `prd_blocks` tables, no `update_prd` tool definition, no Zustand store for PRD state, no rendering components. Next step: create the `prds` + `prd_blocks` table migration with RLS, implement the `update_prd` tool execute function, and build the `prd-viewer.tsx` component tree.
+Shipped (V1, Dexie persistence): `db.prdBlocks` table populated by `conversation.tsx onToolCall` via `upsertPrdBlock`, wizard-store mirrors blocks + confidence via `updateBlock`, `PrdViewer` renders 12 blocks in fixed sort order with placeholders for empty sections, `PrdHeader` shows title + color-coded score badge (empty state before step 3) + disabled Export/Share buttons, `PrdBlock` renders markdown via `PrdMarkdown` with evidence badges (`[Preuve]` / `[Hypothèse]` / `[À vérifier]`) and a disabled `Wand2` "Affiner" button, animations on block entry + highlight ring on update, auto-scroll with pause when the user scrolls away. Confidence score uses a structured `confidence` field on the `update_prd` tool input (no regex parsing).
+
+Next steps: block-refinement (feature 6) wires the Affiner button, pdf-export (feature 8) wires the Export PDF button, public-sharing (feature 9) wires the Partager button, prd-versioning (feature 7, COULD) adds version history.

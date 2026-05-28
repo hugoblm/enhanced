@@ -5,7 +5,7 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: 2026-05-28 against branch `feat/conversation-engine`._
+> _Last verified: 2026-05-28 against branch `feat/prd-live-builder`._
 
 > 🚧 **V1 demo deviates from `docs/initiative_wizard/prd.md`.** No Supabase, no auth, all persistence
 > in client-side Dexie (IndexedDB). See [`docs/initiative_wizard/decisions.md`](../docs/initiative_wizard/decisions.md)
@@ -21,6 +21,7 @@
 | `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Dexie, Vercel, OpenRouter, Tailwind |
 | `design-system.md` | Obra design tokens, colors, typography, radius | Figma, shadcn, tokens, light, dark, globals.css |
 | `conversation-engine.md` | `/api/chat` route, `useChat` setup, tool resolution, step advancement | OpenRouter, ask_user, update_prd, cards, Dexie, STEP_REQUIREMENTS |
+| `prd-live-builder.md` | Right panel: PrdViewer + PrdHeader + PrdBlock(+placeholder) + Zustand mirror | wizard-store, blocks, confidence, hydration, auto-scroll, evidence tags |
 
 ---
 
@@ -40,8 +41,9 @@ Dexie (IndexedDB, local browser only)
 Sessions live in `Dexie` in the user's browser; an in-progress session is gone if the browser
 storage is cleared.
 
-**Status: Landing page (`/`) + wizard shell (`/session/[id]`) + conversation engine shipped on
-Dexie persistence.** PRD live builder, PostHog still pending.
+**Status: Landing page (`/`) + wizard shell (`/session/[id]`) + conversation engine + PRD live
+builder shipped on Dexie persistence.** PostHog and the post-démo features (block-refinement,
+pdf-export, public-sharing, prd-versioning, deferred-auth) still pending.
 
 ### What exists
 - Next.js 16 App Router with TypeScript strict
@@ -57,12 +59,17 @@ Dexie persistence.** PRD live builder, PostHog still pending.
   responses with `ask_user` + `update_prd` tools; cards rendered inline next to assistant
   messages; "Continuer" advances the step when required PRD blocks are present. See
   [`conversation-engine.md`](conversation-engine.md).
+- **PRD live builder** in the right panel: 12 fixed-order blocks rendered from the wizard-store
+  (mirror of `db.prdBlocks`), hydrated from Dexie at PrdViewer mount; `update_prd` tool calls
+  flow through `conversation.tsx onToolCall` -> `upsertPrdBlock` (Dexie) -> `wizard-store.updateBlock`
+  (state); confidence score is a structured field on the tool input. Animations on block entry,
+  ring-2 highlight on update, auto-scroll with pause when the user scrolls away. See
+  [`prd-live-builder.md`](prd-live-builder.md).
 
 ### What does NOT exist (and won't, for the demo)
 - No authentication flow (deferred-auth feature is shelved — see decisions.md)
 - No Supabase: `@supabase/*` deps removed, `src/lib/supabase/*` deleted, `supabase/migrations/*` deleted
 - No middleware (`src/middleware.ts` deleted with the Supabase removal)
-- No PRD live builder (the right panel is still a slot placeholder)
 - No MCP connections
 - No PostHog tracking
 

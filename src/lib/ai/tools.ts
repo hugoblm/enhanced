@@ -132,9 +132,16 @@ const UpdatePrdOutputSchema = z.object({
   written: z.enum(BLOCK_TYPES),
 });
 
+const ConfidenceSchema = z.object({
+  score: z.number().int().min(0).max(100),
+  recommendation: z.enum(["build", "test_first", "abandon"]),
+});
+
+export type ConfidenceInput = z.infer<typeof ConfidenceSchema>;
+
 export const updatePrdTool = tool({
   description:
-    "Update a section of the PRD. Call this whenever the conversation produces information that should appear in the PRD document. Each block_type corresponds to a specific section of the PRD.",
+    "Update a section of the PRD. Call this whenever the conversation produces information that should appear in the PRD document. Each block_type corresponds to a specific section of the PRD. When block_type is 'confidence_score', you MUST also fill the 'confidence' argument so the PRD header can display the score badge.",
   inputSchema: z.object({
     block_type: z.enum(BLOCK_TYPES).describe("The PRD section to update"),
     content: z.string().describe("Markdown content for this PRD section"),
@@ -142,6 +149,9 @@ export const updatePrdTool = tool({
       .array(EvidenceTagSchema)
       .optional()
       .describe("Evidence classification tags for claims in this section"),
+    confidence: ConfidenceSchema.optional().describe(
+      "Structured score and recommendation read directly by the PRD header. MUST be provided when block_type is 'confidence_score'. Ignored for all other block types — do not send it.",
+    ),
   }),
   outputSchema: UpdatePrdOutputSchema,
 });
