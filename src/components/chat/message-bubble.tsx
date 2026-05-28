@@ -14,7 +14,7 @@ interface AskUserPart {
   type: "tool-ask_user";
   toolCallId: string;
   state: string;
-  input: AskUserInput;
+  input?: AskUserInput;
   output?: AskUserOutput;
 }
 
@@ -51,6 +51,7 @@ export function MessageBubble({ message, onAskUserSubmit }: Props) {
         </div>
       )}
       {askUserParts.map((part) => {
+        if (!part.input) return null;
         const isSubmitted =
           part.state === "output-available" || part.state === "output-error";
         return (
