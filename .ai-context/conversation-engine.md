@@ -4,7 +4,7 @@
 > via an AI-led chat. It is wired into the wizard shell's `ConversationPanel` slot and produces the
 > PRD blocks that the PRD live builder (feature 5) will render.
 
-> _Last verified: 2026-05-28 against branch `feat/conversation-engine`._
+> _Last verified: 2026-05-28 against branch `fix/step-prompts-tool-usage`._
 
 ---
 
@@ -39,7 +39,7 @@ request once every pending tool call has a result.
 | Tool | Input | Output | Resolution |
 |------|-------|--------|------------|
 | `ask_user` | `card_type` + question + options/scale_config/placeholder/confirmation_text | `AskUserOutput` (discriminated union by `card_type`) | UI card → `handleAskUserSubmit` |
-| `update_prd` | `block_type` + `content` + `evidence_tags?` | `{ written: BlockType }` | `onToolCall` writes Dexie, calls `addToolOutput` |
+| `update_prd` | `block_type` + `content` + `evidence_tags?` + `confidence?` (required when block_type is `confidence_score`) | `{ written: BlockType }` | `onToolCall` writes Dexie, calls `addToolOutput` |
 
 Both have explicit `outputSchema`s — without them, the AI SDK v6 infers the `output` type as
 `never` and `addToolOutput` becomes uncallable.
@@ -164,6 +164,40 @@ open the next step.
 > - **Where:** `src/components/chat/conversation.tsx`.
 > - **Breaks if:** `chat.addToolOutput` is called directly from `onToolCall` → temporal dead zone
 >   reference at runtime.
+
+> **Invariant — Em-dash is forbidden in every LLM output**
+> - **What:** The BASE_PROMPT General rules forbid the em-dash character (`—`, U+2014) in any LLM
+>   output: text replies, card questions, card option labels, and PRD block content. The LLM is
+>   instructed to use a regular hyphen, comma, colon, semicolon, period, or parentheses instead.
+>   The prompts and tool descriptions themselves are also free of em-dashes so the LLM does not
+>   mimic the style it sees. Exactly one em-dash remains in `system.ts` inside the rule itself,
+>   used as the literal example of the forbidden character.
+> - **Where:** `src/lib/ai/prompts/system.ts` (General rules), all `src/lib/ai/prompts/step-*.ts`,
+>   `src/lib/ai/tools.ts` tool descriptions, `src/components/cards/card-renderer.tsx`
+>   (`OTHER_OPTION_LABEL = "Autre (préciser)"`).
+> - **Breaks if:** new em-dashes leak into prompts or tool descriptions → the LLM starts producing
+>   them too, breaking the visual consistency rule.
+
+---
+
+## System prompt behavior (LLM contract)
+
+The BASE_PROMPT + step prompts now drive two behaviors that are NOT enforced by code but are
+critical to the wizard UX:
+
+- **Incremental PRD writes.** Each step prompt has an `### Incremental writing (CRITICAL)` section
+  telling the LLM to call `update_prd` from the first substantive answer and refine the block
+  across multiple calls. The PRD panel must visibly fill up throughout each step; empty blocks
+  during an active step indicate the LLM is ignoring this rule. Step 1 specifically gates the
+  reformulation confirmation card as the LAST `update_prd` call per block, not the first.
+- **PREFER-card-for-bounded-answers.** The BASE_PROMPT `ask_user` rules list bounded-answer
+  patterns (frequency, severity, persona, channel, yes/no, metric type, validation stage, role,
+  budget bracket, team size) and instruct the LLM to PREFER a card over free text in those cases.
+  Step prompts encode the specific card type per question (e.g. step-2 data sources →
+  `multi_choice`, step-3 risk confidence → `scale`, step-4 metric categories → `multi_choice`).
+
+Code does not validate either behavior. They are observable in `db.messages` (`toolCalls` count
+per session) and in the PRD panel filling pattern.
 
 ---
 

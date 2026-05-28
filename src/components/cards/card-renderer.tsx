@@ -24,7 +24,7 @@ interface Props {
 }
 
 const OTHER_OPTION_ID = "__other__";
-const OTHER_OPTION_LABEL = "Autre — préciser";
+const OTHER_OPTION_LABEL = "Autre (préciser)";
 
 export function CardRenderer({ input, isSubmitted, submittedOutput, onSubmit }: Props) {
   const optionsWithOther = withOtherOption(input.options);
@@ -105,7 +105,7 @@ function withOtherOption(
     if (o.id === OTHER_OPTION_ID) return true;
     if (o.label === OTHER_OPTION_LABEL) return true;
     const normalized = o.label.toLowerCase();
-    return normalized.startsWith("autre —") || normalized.startsWith("other —");
+    return /^(autre|other)\b/.test(normalized);
   });
   if (hasOther) return base;
   return [...base, { id: OTHER_OPTION_ID, label: OTHER_OPTION_LABEL }];

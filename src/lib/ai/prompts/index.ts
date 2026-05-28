@@ -64,9 +64,9 @@ function buildPrdContextSection(blocks: PrdBlockSummary[]): string {
       const tagSummary = counts
         ? ` (${counts.evidence}E/${counts.assumption}A/${counts.to_verify}V)`
         : "";
-      return `- **${b.blockType}** — ${b.content.length} chars${tagSummary}`;
+      return `- **${b.blockType}** - ${b.content.length} chars${tagSummary}`;
     })
     .join("\n");
 
-  return `## Current PRD state\n\nBlocks written:\n${summaries}\n\nRefer to these blocks when continuing the conversation. Do not repeat content already captured — build on it.`;
+  return `## Current PRD state\n\nBlocks written:\n${summaries}\n\nRefer to these blocks when continuing the conversation. Do not repeat content already captured - build on it.`;
 }
