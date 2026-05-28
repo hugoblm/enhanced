@@ -5,7 +5,7 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: 2026-05-28 against branch `feat/prd-live-builder`._
+> _Last verified: 2026-05-28 against branch `feat/block-refinement`._
 
 > 🚧 **V1 demo deviates from `docs/initiative_wizard/prd.md`.** No Supabase, no auth, all persistence
 > in client-side Dexie (IndexedDB). See [`docs/initiative_wizard/decisions.md`](../docs/initiative_wizard/decisions.md)
@@ -22,6 +22,7 @@
 | `design-system.md` | Obra design tokens, colors, typography, radius | Figma, shadcn, tokens, light, dark, globals.css |
 | `conversation-engine.md` | `/api/chat` route, `useChat` setup, tool resolution, step advancement | OpenRouter, ask_user, update_prd, cards, Dexie, STEP_REQUIREMENTS |
 | `prd-live-builder.md` | Right panel: PrdViewer + PrdHeader + PrdBlock(+placeholder) + Zustand mirror | wizard-store, blocks, confidence, hydration, auto-scroll, evidence tags |
+| `refine.md` | Block refinement: `/api/refine` route + `useRefineBlock` hook + `RefinePopover` | generateText+Output.object, EvidenceTagSchema, upsertPrdBlock reuse |
 
 ---
 
@@ -42,8 +43,8 @@ Sessions live in `Dexie` in the user's browser; an in-progress session is gone i
 storage is cleared.
 
 **Status: Landing page (`/`) + wizard shell (`/session/[id]`) + conversation engine + PRD live
-builder shipped on Dexie persistence.** PostHog and the post-démo features (block-refinement,
-pdf-export, public-sharing, prd-versioning, deferred-auth) still pending.
+builder + block refinement shipped on Dexie persistence.** PostHog and the remaining post-démo
+features (pdf-export, public-sharing, prd-versioning, deferred-auth) still pending.
 
 ### What exists
 - Next.js 16 App Router with TypeScript strict
@@ -65,6 +66,11 @@ pdf-export, public-sharing, prd-versioning, deferred-auth) still pending.
   (state); confidence score is a structured field on the tool input. Animations on block entry,
   ring-2 highlight on update, auto-scroll with pause when the user scrolls away. See
   [`prd-live-builder.md`](prd-live-builder.md).
+- **Block refinement** on every filled block: the "Affiner" button opens a popover with a
+  natural-language instruction; `useRefineBlock` POSTs to `/api/refine`, which calls the model
+  with an `Output.object` schema and returns `{ content, evidence_tags }`. The hook re-uses
+  `upsertPrdBlock` + `wizard-store.updateBlock` — the same write path as `update_prd`. See
+  [`refine.md`](refine.md).
 
 ### What does NOT exist (and won't, for the demo)
 - No authentication flow (deferred-auth feature is shelved — see decisions.md)
@@ -82,6 +88,7 @@ pdf-export, public-sharing, prd-versioning, deferred-auth) still pending.
 | `/` | Page (SSR) | None | Landing page — PitchForm writes Dexie session + client-navigates `/session/[id]` |
 | `/session/[id]` | Page (SSR shell, client hydration) | None | Wizard shell — server validates UUID format only; client hydrates store from Dexie, renders split-view (or tabs) |
 | `/api/chat` | Route handler (Node runtime, `maxDuration = 60`) | None | Stateless: Zod-validates body, builds system prompt, `streamText` with the `ask_user`/`update_prd` tools, returns SSE via `toUIMessageStreamResponse`. Reads/writes no DB. |
+| `/api/refine` | Route handler (Node runtime, `maxDuration = 60`) | None | Stateless: Zod-validates body (`refineRequestSchema`), calls `generateText` with `Output.object({ schema: { content, evidence_tags } })`, returns the object as JSON. Reads/writes no DB. |
 
 ### Data flow: Landing → Session
 

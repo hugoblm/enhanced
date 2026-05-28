@@ -4,9 +4,10 @@
 
 > One-screen overview.
 
-**Status:** `Planned`
-**Owner:** Hugo · **Last updated:** 2026-05-27
+**Status:** `Implemented (V1 Dexie scope)`
+**Owner:** Hugo · **Last updated:** 2026-05-28
 **Part of initiative:** [`../../README.md`](../../README.md) · **PRD:** [`../../prd.md`](../../prd.md)
+**Code reference:** [`.ai-context/refine.md`](../../../../.ai-context/refine.md)
 
 ## In one paragraph
 
@@ -28,4 +29,15 @@ Block refinement gives the Builder PM inline control over individual PRD section
 
 ## Current state / next step
 
-No implementation yet. Depends on `prd-live-builder` (block rendering) and `conversation-engine` (AI integration). Next step: implement `refine-popover.tsx`, the `POST /api/refine` route, and the Zustand store update logic.
+Shipped on `feat/block-refinement` with the V1 Dexie scope. The "Affiner" button on every filled PRD block opens a `RefinePopover`; submitting an instruction calls `POST /api/refine` (which uses `generateText` with an `Output.object` schema mirroring the `update_prd` tool contract) and applies the new `content` + `evidence_tags` to both the Zustand mirror and Dexie via the shared `upsertPrdBlock` helper. Implementation details: [`.ai-context/refine.md`](../../../../.ai-context/refine.md).
+
+### Deviations from the tech spec, deferred post-démo
+
+- No `prd_versions` insert (table absent in Dexie; `prd-versioning` feature is post-démo).
+- No auth check or `enhanced_anon_id` cookie validation (V1 is anonymous).
+- No rate limiting (single-user demo; the OpenRouter credit cap is the only throttle).
+- No progressive streaming (the route returns the object once it's complete; ~2-4 s wait).
+- No conversation panel log of the refinement exchange.
+- No Vitest / Playwright suite (manual smoke is enough for the demo).
+
+When Supabase is reintroduced, the route gets auth + ownership check + `prd_versions` insert, and the body contract can drop `allBlocks` in favour of a server-side SELECT.
