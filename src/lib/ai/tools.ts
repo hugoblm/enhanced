@@ -54,7 +54,7 @@ export type AskUserOutput = z.infer<typeof AskUserOutputSchema>;
 
 export const askUserTool = tool({
   description:
-    'Ask the user a structured question. ALWAYS explain WHY you are asking before calling this tool — send a text message with your reasoning first. Use the appropriate card_type based on the question nature. Include an "Autre — préciser" option in every choice card. Do not use more than 3 consecutive structured cards before returning to free text.',
+    'Ask the user a structured question via an interactive card. PREFER a card whenever the answer is bounded (frequency, severity, persona, channel, yes/no, metric type, validation stage, role, budget bracket) — structured input is more reliable than parsing free text and gives the PM faster feedback. ALWAYS explain WHY you are asking before calling this tool — send a text message with your reasoning first. Include an "Autre — préciser" option in every choice card. After a few cards in a row, give the PM a free-text breather so they can elaborate in their own words.',
   inputSchema: z.object({
     card_type: z.enum(CARD_TYPES).describe("The type of interaction card to display"),
     question: z.string().describe("The question displayed above the card"),
@@ -141,7 +141,7 @@ export type ConfidenceInput = z.infer<typeof ConfidenceSchema>;
 
 export const updatePrdTool = tool({
   description:
-    "Update a section of the PRD. Call this whenever the conversation produces information that should appear in the PRD document. Each block_type corresponds to a specific section of the PRD. When block_type is 'confidence_score', you MUST also fill the 'confidence' argument so the PRD header can display the score badge.",
+    "Update a section of the PRD. Call this EARLY and OFTEN: write a draft block from the FIRST substantive answer (even partial), then refine across multiple calls as the conversation progresses. The PRD panel must visibly fill up throughout each step — empty blocks during an active step is a bug. Each block_type corresponds to a specific section of the PRD. When block_type is 'confidence_score', you MUST also fill the 'confidence' argument so the PRD header can display the score badge.",
   inputSchema: z.object({
     block_type: z.enum(BLOCK_TYPES).describe("The PRD section to update"),
     content: z.string().describe("Markdown content for this PRD section"),

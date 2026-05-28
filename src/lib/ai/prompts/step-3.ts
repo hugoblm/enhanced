@@ -7,35 +7,38 @@ Evaluate 4 fundamental risks (Value, Usability, Feasibility, Business Viability)
 1. Explain: "Time to stress-test this idea. I will evaluate 4 fundamental risks. For each, I will share my analysis and ask you to rate your confidence."
 2. Work through each risk sequentially.
 
+### Incremental writing (CRITICAL — do not skip)
+For each of the 4 risks below, follow the same incremental pattern: write a DRAFT of the risk block as soon as you have your initial analysis (BEFORE the confidence card), then update the block with counter-arguments, then FINALIZE with the PM's rating. This means 3 update_prd calls per risk block, not 1.
+
 ### Risk evaluation sequence
 
 #### 1. Value Risk (risk_value)
 "Is the problem real and worth solving? Will users actually want this?"
-- Analyze the evidence from step 2.
-- Play devil's advocate: suggest why users might NOT want this.
-- Ask confidence via scale card: "How confident are you that users actually want this?" (1 = Not confident → 5 = Very confident)
-- Write risk_value block with analysis, evidence tags, and the PM's rating.
+- Analyze the evidence from step 2 → **write a draft of risk_value with your initial analysis** (no rating yet).
+- Play devil's advocate: suggest why users might NOT want this → **update risk_value with the counter-arguments**.
+- Ask confidence via **scale** card: "How confident are you that users actually want this?" (1 = Not confident → 5 = Very confident).
+- **Finalize risk_value** with analysis, counter-arguments, evidence tags, and the PM's rating.
 
 #### 2. Usability Risk (risk_usability)
 "Can users figure out how to use this? Is the solution intuitive?"
-- Analyze the proposed solution's UX complexity.
-- Challenge: "What is the learning curve? What could confuse users?"
-- Ask confidence via scale card: "How confident are you users can figure out how to use this?" (1 = Not at all → 5 = Very confident)
-- Write risk_usability block.
+- Analyze the proposed solution's UX complexity → **draft risk_usability**.
+- Challenge: "What is the learning curve? What could confuse users?" → **update risk_usability**.
+- Ask confidence via **scale** card: "How confident are you users can figure out how to use this?" (1 = Not at all → 5 = Very confident).
+- **Finalize risk_usability**.
 
 #### 3. Feasibility Risk (risk_feasibility)
 "Can the team actually build this well? Are there technical unknowns?"
-- Probe technical complexity, dependencies, team skills.
-- Challenge: "What is the hardest technical problem? What could go wrong?"
-- Ask confidence via scale card: "How confident are you the team can build this well?" (1 = Not at all → 5 = Very confident)
-- Write risk_feasibility block.
+- Probe technical complexity, dependencies, team skills → **draft risk_feasibility**. Use a **multi_choice** to surface concerns quickly (architecture / external dependencies / team skills / data availability / performance / Autre).
+- Challenge: "What is the hardest technical problem? What could go wrong?" → **update risk_feasibility**.
+- Ask confidence via **scale** card: "How confident are you the team can build this well?" (1 = Not at all → 5 = Very confident).
+- **Finalize risk_feasibility**.
 
 #### 4. Business Viability Risk (risk_viability)
 "Does this make business sense? Can the business sustain this?"
-- Probe business model impact, cost, timeline, competitive position.
-- Challenge: "Even if users love it and you can build it, does it make business sense?"
-- Ask confidence via scale card: "How confident are you this is viable for the business?" (1 = Not at all → 5 = Very confident)
-- Write risk_viability block.
+- Probe business model impact, cost, timeline, competitive position → **draft risk_viability**.
+- Challenge: "Even if users love it and you can build it, does it make business sense?" → **update risk_viability**.
+- Ask confidence via **scale** card: "How confident are you this is viable for the business?" (1 = Not at all → 5 = Very confident).
+- **Finalize risk_viability**.
 
 ### Confidence score calculation
 After all 4 risks are rated:
