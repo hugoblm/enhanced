@@ -1,6 +1,9 @@
 # Stack & Dependencies
 
-> _Last verified: 2026-05-27 against branch `staging`._
+> _Last verified: 2026-05-28 against branch `feat/wizard-shell` (Dexie refactor)._
+
+> 🚧 **V1 demo** : no Supabase, no auth — see
+> [`../docs/initiative_wizard/decisions.md`](../docs/initiative_wizard/decisions.md).
 
 ---
 
@@ -20,29 +23,31 @@
 | `next` | 16.2.6 | Framework | Yes |
 | `react` / `react-dom` | 19.2.4 | UI | Yes |
 | `geist` | ^1.7.1 | Geist font (local, not Google Fonts) | Yes |
-| `@supabase/supabase-js` | ^2.106.2 | Supabase client | Yes (configured) |
-| `@supabase/ssr` | ^0.10.3 | Supabase server-side auth (cookies) | Yes (configured) |
+| `dexie` | ^4.4.3 | IndexedDB client (sessions persistence) | Yes (`src/lib/db/dexie.ts`) |
 | `tailwindcss` | ^4 | Styling | Yes |
 | `@tailwindcss/typography` | ^0.5.19 | Prose styling for markdown | Installed, not used |
 | `shadcn` | ^4.8.1 | Component CLI | Yes (initialized) |
-| `@base-ui/react` | ^1.5.0 | shadcn/ui primitives | Yes (via shadcn) |
+| `@base-ui/react` | ^1.5.0 | shadcn/ui primitives | Yes (Button, Tabs) |
 | `class-variance-authority` | ^0.7.1 | Component variants | Yes (via shadcn) |
 | `clsx` / `tailwind-merge` | latest | Class merging (`cn()`) | Yes |
-| `lucide-react` | ^1.16.0 | Icons | Installed, not used |
+| `lucide-react` | ^1.16.0 | Icons | Yes (step indicator, pitch-form) |
 | `tw-animate-css` | ^1.4.0 | Animations | Installed, not used |
-| `zod` | ^4.4.3 | Schema validation | Installed, not used |
-| `react-hook-form` | ^7.76.1 | Form management | Installed, not used |
+| `zod` | ^4.4.3 | Schema validation | Yes (`rawIdeaSchema` in pitch-form) |
+| `react-hook-form` | ^7.76.1 | Form management | Installed, not used (pitch-form uses native form) |
 | `@hookform/resolvers` | ^5.4.0 | Zod resolver for RHF | Installed, not used |
-| `zustand` | ^5.0.13 | Client state management | Installed, not used |
-| `ai` | ^6.0.191 | Vercel AI SDK | Installed, not used |
-| `@ai-sdk/mcp` | ^1.0.43 | MCP client for AI SDK | Installed, not used |
-| `@openrouter/ai-sdk-provider` | ^2.9.0 | OpenRouter provider | Installed, not used |
-| `react-markdown` | ^10.1.0 | Markdown rendering | Installed, not used |
-| `remark-gfm` | ^4.0.1 | GitHub-flavored markdown | Installed, not used |
-| `rehype-sanitize` | ^6.0.0 | HTML sanitization | Installed, not used |
-| `nanoid` | ^5.1.11 | Short unique IDs | Installed, not used |
+| `zustand` | ^5.0.13 | Client state management | Yes (`wizard-store`) |
+| `ai` | ^6.0.191 | Vercel AI SDK | Installed, not used (Feature 4) |
+| `@ai-sdk/mcp` | ^1.0.43 | MCP client for AI SDK | Installed, not used (Feature 4) |
+| `@openrouter/ai-sdk-provider` | ^2.9.0 | OpenRouter provider | Installed, not used (Feature 4) |
+| `react-markdown` | ^10.1.0 | Markdown rendering | Installed, not used (Feature 5) |
+| `remark-gfm` | ^4.0.1 | GitHub-flavored markdown | Installed, not used (Feature 5) |
+| `rehype-sanitize` | ^6.0.0 | HTML sanitization | Installed, not used (Feature 5) |
+| `nanoid` | ^5.1.11 | Short unique IDs | Installed, not used (Feature 9 share slugs) |
 | `posthog-js` | ^1.376.2 | PostHog browser analytics | Installed, not used |
 | `posthog-node` | ^5.21.2 | PostHog server analytics | Installed, not used |
+
+**Removed in V1 demo:** `@supabase/supabase-js`, `@supabase/ssr` (see `decisions.md` 2026-05-28 entry).
+They will return when `deferred-auth` is re-enabled.
 
 ---
 
@@ -50,12 +55,25 @@
 
 | File | Purpose |
 |------|---------|
-| `src/lib/supabase/client.ts` | Browser Supabase client (`createBrowserClient`) |
-| `src/lib/supabase/server.ts` | Server Supabase client (reads cookies) |
-| `src/lib/supabase/middleware.ts` | Session refresh logic (`updateSession`) |
-| `src/middleware.ts` | Next.js middleware — calls `updateSession` on every request |
+| `src/lib/db/dexie.ts` | Dexie DB definition — single `sessions` table (V1) |
+| `src/lib/schemas/session.ts` | Zod `rawIdeaSchema` (validation, shared landing + future API) |
+| `src/lib/types/session.ts` | Re-exports `Session` / `SessionStatus` from Dexie |
+| `src/stores/wizard-store.ts` | Zustand wizard state (currentStep, viewingStep, activePanel) |
+| `src/hooks/use-media-query.ts` | SSR-safe responsive breakpoint hook |
 | `src/lib/utils.ts` | `cn()` helper (clsx + tailwind-merge) |
-| `src/components/ui/button.tsx` | shadcn/ui Button (only component installed so far) |
+| `src/components/ui/button.tsx` | shadcn/ui Button |
+| `src/components/ui/tabs.tsx` | shadcn/ui Tabs |
+| `src/components/landing/pitch-form.tsx` | Landing CTA — writes Dexie + client navigates |
+| `src/components/wizard/wizard-shell.tsx` | Split-view orchestrator (40/60 desktop, tabs mobile) |
+| `src/components/wizard/step-indicator.tsx` | 4-step navigation bar |
+| `src/components/wizard/conversation-panel.tsx` | Empty slot for Feature 4 |
+| `src/components/wizard/prd-panel.tsx` | Empty slot for Feature 5 |
+| `src/app/layout.tsx` | Root layout (Geist font) |
+| `src/app/(marketing)/page.tsx` | Landing page |
+| `src/app/(app)/layout.tsx` | App route group layout (h-screen) |
+| `src/app/(app)/session/[id]/page.tsx` | Server Component — validates UUID format only |
+| `src/app/(app)/session/[id]/wizard-client.tsx` | Client boundary — hydrates from Dexie |
+| `src/app/(app)/session/[id]/not-found.tsx` | 404 page for malformed UUID |
 
 ---
 
@@ -64,15 +82,15 @@
 | Tool | Version | Source | Purpose |
 |------|---------|--------|---------|
 | Vercel CLI | 54.4.1 | Homebrew (`vercel-cli`) | Deploy, env management |
-| Supabase CLI | 2.101.0 | Homebrew (`supabase/tap`) | DB migrations, type generation |
+
+The Supabase CLI is no longer required for V1. It can be reinstalled when `deferred-auth` returns.
 
 ---
 
-## Supabase project
+## Supabase project (parked)
 
 - **Project ref**: `gzuhqxzvapnalztkoaca`
 - **URL**: `https://gzuhqxzvapnalztkoaca.supabase.co`
-- **Region**: configured via Supabase dashboard
-- **Tables**: none (no migrations yet)
-- **Auth**: Magic Link enabled (no password, no OAuth)
-- **Local config**: `supabase/config.toml` (linked via `supabase link`)
+- **Status**: unused in V1 demo. Project is intact remotely; no migrations applied at the moment
+  (all locally-tracked migrations were removed when Supabase was dropped — see `decisions.md`).
+- **Re-introduction plan**: see the "Plan de retour" section of the 2026-05-28 Supabase decision.

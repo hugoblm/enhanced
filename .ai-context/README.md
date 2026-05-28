@@ -5,7 +5,11 @@
 > does today and which invariants break if you touch the wrong thing. It is not a planning doc
 > (that's `docs/`). When the code and this directory disagree, the code is right — fix the doc.
 
-> _Last verified: 2026-05-28 against branch `feat/landing-page`._
+> _Last verified: 2026-05-28 against branch `feat/wizard-shell` (Dexie refactor)._
+
+> 🚧 **V1 demo deviates from `docs/initiative_wizard/prd.md`.** No Supabase, no auth, all persistence
+> in client-side Dexie (IndexedDB). See [`docs/initiative_wizard/decisions.md`](../docs/initiative_wizard/decisions.md)
+> for the rationale.
 
 ---
 
@@ -14,7 +18,7 @@
 | File | Scope | Keywords |
 |------|-------|----------|
 | `README.md` | Navigation + cross-cutting invariants | **always read first** |
-| `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Supabase, Vercel, OpenRouter, Tailwind |
+| `stack.md` | Tech stack, dependencies, env vars, deploy | Next.js, Dexie, Vercel, OpenRouter, Tailwind |
 | `design-system.md` | Obra design tokens, colors, typography, radius | Figma, shadcn, tokens, light, dark, globals.css |
 
 ---
@@ -22,31 +26,42 @@
 ## Current Architecture
 
 ```
-Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
-                ↕
-          OpenRouter (AI, future)
-                ↕
-          MCP servers (PostHog/Mixpanel/Amplitude, future)
+Browser → Next.js (Vercel)
+   │            │
+   │            ↓
+   │      OpenRouter (AI, future)
+   │
+   ↓
+Dexie (IndexedDB, local browser only)
 ```
 
-**Status: Landing page (`/`) shipped on `feat/landing-page`. Wizard, auth flow, AI integration, and PostHog instrumentation still pending.**
+**No server-side persistence in V1.** No Supabase, no auth, no cookies for session identity.
+Sessions live in `Dexie` in the user's browser; an in-progress session is gone if the browser
+storage is cleared.
+
+**Status: Landing page (`/`) + wizard shell (`/session/[id]`) shipped on Dexie persistence.**
+Conversation engine, PRD live builder, AI integration, PostHog still pending.
 
 ### What exists
 - Next.js 16 App Router with TypeScript strict
-- Supabase client (browser + server + middleware) — Magic Link auth configured
-- Database tables: `sessions`, `prds` with RLS (migration `20260528000000`)
-- shadcn/ui initialized (Button component)
-- Zustand, Zod, React Hook Form, Vercel AI SDK, react-markdown installed (Zod used for form validation)
-- Landing page at `/` via `(marketing)` route group — PitchForm client island + createSession server action
-- Middleware: Supabase session refresh on every request
-- Cookie `enhanced_anon_id` (httpOnly, 30-day TTL) links browser to anonymous session
+- **Dexie 4 client-side DB** (`src/lib/db/dexie.ts`) — single `sessions` table, schema v1
+- shadcn/ui: Button, Tabs (Base UI–backed)
+- Zustand, Zod, React Hook Form, Vercel AI SDK, react-markdown installed
+- Landing page at `/` via `(marketing)` route group — PitchForm client island that **writes to Dexie**
+  and client-navigates to `/session/[id]`
+- Wizard at `/session/[id]` via `(app)` route group — server validates UUID format, client hydrates
+  the Zustand store from Dexie, renders split-view (40/60 desktop, tabs < 1024px) with empty
+  conversation + PRD panels (slots for features 4/5)
 
-### What does NOT exist yet
-- No authentication flow (login page, auth callback, deferred-auth)
-- No wizard UI (`/session/[id]` route does not exist — redirect from landing 404s)
+### What does NOT exist (and won't, for the demo)
+- No authentication flow (deferred-auth feature is shelved — see decisions.md)
+- No Supabase: `@supabase/*` deps removed, `src/lib/supabase/*` deleted, `supabase/migrations/*` deleted
+- No middleware (`src/middleware.ts` deleted with the Supabase removal)
+- No conversation engine (panels render placeholders)
+- No PRD live builder
 - No AI integration (prompts, tool calling)
 - No MCP connections
-- No PostHog tracking setup
+- No PostHog tracking
 
 ---
 
@@ -54,7 +69,8 @@ Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
 
 | Route | Type | Auth | Description |
 |-------|------|------|-------------|
-| `/` | Page (SSR) | Public | Landing page — PitchForm → createSession → redirect `/session/[id]` |
+| `/` | Page (SSR) | None | Landing page — PitchForm writes Dexie session + client-navigates `/session/[id]` |
+| `/session/[id]` | Page (SSR shell, client hydration) | None | Wizard shell — server validates UUID format only; client hydrates store from Dexie, renders split-view (or tabs) |
 
 ### Data flow: Landing → Session
 
@@ -62,14 +78,42 @@ Browser → Next.js (Vercel) → Supabase (Postgres + Auth)
 Browser GET /
   → (marketing)/page.tsx (Server Component: header, headline, PitchForm island)
   → pitch-form.tsx (Client: textarea + CTA, client-side Zod validation)
-  → createSession() Server Action
+      On submit:
       1. Validate via rawIdeaSchema (Zod, min 20 / max 5000 chars)
-      2. Generate anonymousId (crypto.randomUUID())
-      3. INSERT sessions (anonymous_id, raw_idea, step=1, status=active)
-      4. INSERT prds (session_id, title='', is_public=false)
-      5. Set cookie enhanced_anon_id (httpOnly, 30d)
-      6. redirect(/session/{id})
+      2. const id = crypto.randomUUID()
+      3. db.sessions.put({ id, rawIdea, currentStep:1, status:"active", createdAt:Date.now(), updatedAt:Date.now() })
+      4. router.push(`/session/${id}`)   // client-side nav, no server round-trip
 ```
+
+### Data flow: Session page → Wizard shell
+
+```
+Browser GET /session/{id}
+  → (app)/layout.tsx (Server: h-screen flex flex-col wrapper)
+  → (app)/session/[id]/page.tsx (Server Component, minimal)
+      1. Validate id format as UUID
+      2. notFound() if malformed
+      3. Render <WizardClient sessionId={id} />   // no DB read
+  → wizard-client.tsx (Client boundary)
+      → useEffect: const session = await db.sessions.get(sessionId)
+        - if undefined  → render "Session introuvable" client-side (link to /)
+        - else          → useWizardStore.initialize(session); render <WizardShell />
+  → wizard-shell.tsx (Client)
+      → useMediaQuery("(min-width: 1024px)") picks layout
+      → Desktop: StepIndicator + grid-cols-[40fr_60fr] (ConversationPanel | PrdPanel)
+      → Mobile/tablet: StepIndicator + Tabs (keepMounted on both panels)
+```
+
+**Step model (`wizard-store`):** `currentStep` is actual progress (1-4). `viewingStep` is what's
+displayed — diverges only when a user clicks a completed step to review it; `currentStep` is never
+rolled back. `advanceStep` will be called by the conversation-engine via
+`useWizardStore.getState().advanceStep()` when a step is completed (consumer contract for feature 4).
+
+**Persistence contract:** the source of truth for a session's `rawIdea`/`currentStep`/`status` is
+the Dexie row. The Zustand store is hydrated on mount and updated optimistically. Any write that
+needs to survive a refresh must also `db.sessions.update(id, { ... })` — V1 only does that at
+session-creation time (in pitch-form), so the store and the row diverge after `advanceStep`. The
+conversation-engine feature will be responsible for the write-through.
 
 ---
 
@@ -77,27 +121,32 @@ Browser GET /
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` + Vercel | Supabase project endpoint |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env.local` + Vercel | Supabase anonymous JWT (public, RLS-protected) |
+| _(none required at runtime in V1 demo)_ | — | All persistence is local Dexie; no AI key yet |
 
-Both are `NEXT_PUBLIC_` — safe to expose. The `service_role` key is NOT stored anywhere in the codebase.
+`OPENROUTER_API_KEY` will be added when the conversation-engine feature ships.
 
 ---
 
 ## Cross-Cutting Invariants
 
-> **Invariant — Supabase env vars must match across local and Vercel**
-> - **What:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` must be identical in `.env.local`, Vercel Production, and Vercel Preview (staging branch).
-> - **Where:** `.env.local`, Vercel env vars (Production + Preview/staging).
-> - **Breaks if:** they differ → auth fails silently, API calls go to wrong project or return 401.
+> **Invariant — Dexie writes are client-only**
+> - **What:** `import { db } from "@/lib/db/dexie"` must only be used in Client Components or in
+>   code that runs only in the browser (event handlers, `useEffect`). Server Components and route
+>   handlers cannot access IndexedDB.
+> - **Where:** `src/lib/db/dexie.ts`, anywhere that imports it.
+> - **Breaks if:** Dexie is imported into a Server Component or middleware → runtime crash on the
+>   server ("indexedDB is not defined").
 
-> **Invariant — Middleware must refresh Supabase session**
-> - **What:** `src/middleware.ts` calls `updateSession()` on every request to keep the auth cookie fresh.
-> - **Where:** `src/middleware.ts` → `src/lib/supabase/middleware.ts`.
-> - **Breaks if:** middleware is removed or bypassed → session expires mid-navigation, user gets logged out randomly.
+> **Invariant — Session source of truth is the Dexie row**
+> - **What:** The Zustand `wizard-store` is hydration state for the current render. Any state that
+>   must survive a refresh (currentStep, status) has to be written back to `db.sessions`.
+> - **Where:** `src/stores/wizard-store.ts`, future write-through in the conversation-engine feature.
+> - **Breaks if:** a feature mutates the store but forgets to `db.sessions.update(...)` → refresh
+>   silently resets that state.
 
 > **Invariant — .ai-context must be updated in every commit that changes code**
-> - **What:** Any commit that modifies routes, data flows, modules, services, or invariants must include matching `.ai-context/` updates.
+> - **What:** Any commit that modifies routes, data flows, modules, services, or invariants must
+>   include matching `.ai-context/` updates.
 > - **Where:** This directory.
 > - **Breaks if:** skipped → next agent works from stale context → regressions.
 
