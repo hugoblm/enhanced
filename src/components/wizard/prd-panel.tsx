@@ -7,7 +7,7 @@ interface Props {
 
 export function PrdPanel({ className }: Props) {
   return (
-    <div className={cn("min-h-0", className)}>
+    <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <PrdViewer />
     </div>
   );
