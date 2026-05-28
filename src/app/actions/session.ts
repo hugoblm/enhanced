@@ -13,37 +13,40 @@ export async function createSession(formData: FormData) {
     return { error: parsed.error.issues[0].message };
   }
 
+  // Pre-generate IDs so we don't need .select() after insert. The SELECT
+  // RLS policy can't see anon-owned rows (no JWT claim to match against),
+  // so any insert().select() would 42501 on the RETURNING clause even
+  // though the INSERT itself succeeds.
+  const sessionId = crypto.randomUUID();
   const anonymousId = crypto.randomUUID();
 
   const supabase = await createClient();
 
-  const { data: session, error: sessionError } = await supabase
-    .from("sessions")
-    .insert({
-      anonymous_id: anonymousId,
-      user_id: null,
-      raw_idea: parsed.data.rawIdea,
-      current_step: 1,
-      status: "active",
-    })
-    .select("id")
-    .single();
+  const { error: sessionError } = await supabase.from("sessions").insert({
+    id: sessionId,
+    anonymous_id: anonymousId,
+    user_id: null,
+    raw_idea: parsed.data.rawIdea,
+    current_step: 1,
+    status: "active",
+  });
 
-  if (sessionError || !session) {
+  if (sessionError) {
+    console.error("[createSession] sessions.insert failed:", sessionError);
     return {
       error: "Impossible de créer la session. Veuillez réessayer.",
     };
   }
 
   const { error: prdError } = await supabase.from("prds").insert({
-    session_id: session.id,
+    session_id: sessionId,
     user_id: null,
     title: "",
     is_public: false,
   });
 
   if (prdError) {
-    console.error("PRD creation failed:", prdError);
+    console.error("[createSession] prds.insert failed:", prdError);
   }
 
   const cookieStore = await cookies();
@@ -55,5 +58,5 @@ export async function createSession(formData: FormData) {
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect(`/session/${session.id}`);
+  redirect(`/session/${sessionId}`);
 }
