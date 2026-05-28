@@ -1,5 +1,8 @@
 # Landing Page
 
+> 🚧 **V1 demo deviation** — la server action `createSession` est remplacée par un write Dexie
+> client-side dans `pitch-form.tsx`. Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

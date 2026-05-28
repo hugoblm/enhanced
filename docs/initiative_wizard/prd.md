@@ -1,5 +1,10 @@
 # PRD — Enhanced Wizard V1
 
+> 🚧 **V1 demo deviations** — la persistance et l'auth sont simplifiées pour la démo publique.
+> Le présent PRD décrit la **cible long terme**. Voir [`decisions.md`](./decisions.md) pour le
+> journal des écarts assumés en V1 (skip de la feature `deferred-auth`, drop de Supabase au profit
+> de Dexie côté client).
+
 > **Product Requirements Document.** This is the *delivery* spec for the Enhanced V1 initiative:
 > it says **what** we build and **why**, in enough detail that design and engineering can execute —
 > and it **breaks the need down into features** (section 5). It builds on the validated Discovery — it does

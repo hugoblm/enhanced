@@ -88,14 +88,20 @@ enhanced/
 
 ## Technology Stack
 
+> 🚧 **V1 demo deviates from this table on persistence and auth.**
+> No Supabase, no auth: persistence is client-only Dexie. See
+> [`docs/initiative_wizard/decisions.md`](docs/initiative_wizard/decisions.md).
+
 | Area | Stack | Runtime | Notes |
 |------|-------|---------|-------|
 | Framework | Next.js 16 (App Router) | Node 22 | TypeScript strict |
 | UI | shadcn/ui + Tailwind CSS v4 | — | Geist font (local via `geist` package) |
-| Database + Auth | Supabase (Postgres + Magic Link) | — | RLS enforced, `@supabase/ssr` |
+| Persistence (V1 demo) | Dexie (IndexedDB) | Browser | `src/lib/db/dexie.ts`, single `sessions` table |
+| Auth (V1 demo) | None | — | `deferred-auth` feature shelved post-démo |
+| Database + Auth (long-term target) | Supabase (Postgres + Magic Link) | — | RLS enforced, `@supabase/ssr` — re-introduced post-démo |
 | AI | Vercel AI SDK + OpenRouter | — | `ai`, `@ai-sdk/mcp`, `@openrouter/ai-sdk-provider` |
 | Validation | Zod + React Hook Form | — | Shared schemas client/server |
-| State | Zustand | — | Wizard in-session state |
+| State | Zustand | — | Wizard in-session state, hydrated from Dexie |
 | Analytics | PostHog | — | `posthog-js` + `posthog-node` |
 | Deploy | Vercel | — | Preview deploys enabled |
 | CI/CD | GitHub Actions | — | |

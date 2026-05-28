@@ -1,5 +1,8 @@
 # Public Sharing
 
+> 🚧 **V1 demo : feature reportée post-démo.** Le partage par URL nécessite une persistance
+> serveur ; Dexie est local-browser-only. Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

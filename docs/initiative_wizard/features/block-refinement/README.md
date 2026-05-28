@@ -1,5 +1,7 @@
 # Block Refinement
 
+> 🚧 **V1 demo deviation** — opère sur Dexie (pas Supabase). Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

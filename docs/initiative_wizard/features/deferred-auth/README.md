@@ -1,5 +1,8 @@
 # Deferred Auth
 
+> 🚧 **V1 demo : feature DEFERRED post-démo.** Pas livrée pour la démo publique.
+> Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`

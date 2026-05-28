@@ -1,5 +1,8 @@
 # PDF Export
 
+> 🚧 **V1 demo deviation** — lit les données depuis Dexie au lieu de Supabase. Contrat de données
+> stable. Voir [`decisions.md`](../../decisions.md).
+
 > One-screen overview.
 
 **Status:** `Planned`
