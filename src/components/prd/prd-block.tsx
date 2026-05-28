@@ -8,6 +8,7 @@ import type { PrdBlockMirror } from "@/stores/wizard-store";
 import { cn } from "@/lib/utils";
 import { EvidenceTag } from "./evidence-tag";
 import { PrdMarkdown } from "./prd-markdown";
+import { RefinePopover } from "./refine-popover";
 
 interface Props {
   block: PrdBlockMirror;
@@ -44,17 +45,16 @@ export function PrdBlock({ block, isHighlighted, onAnimationEnd }: Props) {
         <h3 id={headingId} className="text-base font-semibold">
           {heading}
         </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled
-          aria-disabled="true"
-          title="Disponible bientôt — affiner ce bloc"
-          className="shrink-0"
+        <RefinePopover
+          blockType={block.blockType}
+          currentContent={block.content}
+          step={block.step}
         >
-          <Wand2 size={14} />
-          Affiner
-        </Button>
+          <Button variant="ghost" size="sm" className="shrink-0">
+            <Wand2 size={14} />
+            Affiner
+          </Button>
+        </RefinePopover>
       </header>
 
       <div className="text-sm">
