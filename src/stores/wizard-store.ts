@@ -1,8 +1,29 @@
 import { create } from "zustand";
-import { db } from "@/lib/db/dexie";
+import {
+  db,
+  type EvidenceTag,
+  type PrdBlockRow,
+  type Recommendation,
+} from "@/lib/db/dexie";
+import {
+  BLOCK_SORT_ORDER,
+  BLOCK_TYPES,
+  type BlockType,
+} from "@/lib/prd/constants";
+import { parseConfidenceScore, parseRecommendation } from "@/lib/prd/score";
 import type { SessionStatus } from "@/lib/types/session";
 
 export type PanelName = "conversation" | "prd";
+
+// The store mirrors PRD blocks for rendering — id/sessionId are Dexie concerns
+// the UI never reads, so we omit them. db.prdBlocks remains the source of truth.
+export type PrdBlockMirror = Omit<PrdBlockRow, "id" | "sessionId">;
+
+export type BlocksMap = Record<BlockType, PrdBlockMirror | null>;
+
+function emptyBlocksMap(): BlocksMap {
+  return Object.fromEntries(BLOCK_TYPES.map((t) => [t, null])) as BlocksMap;
+}
 
 interface WizardState {
   sessionId: string | null;
@@ -16,6 +37,11 @@ interface WizardState {
 
   activePanel: PanelName;
 
+  blocks: BlocksMap;
+  confidenceScore: number | null;
+  recommendation: Recommendation | null;
+  lastUpdatedBlockType: BlockType | null;
+
   initialize: (data: {
     sessionId: string;
     currentStep: number;
@@ -25,6 +51,19 @@ interface WizardState {
   advanceStep: () => Promise<void>;
   goToStep: (step: number) => void;
   setActivePanel: (panel: PanelName) => void;
+
+  hydrateBlocks: (
+    rows: PrdBlockRow[],
+    score: number | null,
+    recommendation: Recommendation | null,
+  ) => void;
+  updateBlock: (
+    blockType: BlockType,
+    content: string,
+    evidenceTags: EvidenceTag[],
+    step: number,
+  ) => void;
+  clearLastUpdated: () => void;
 }
 
 const MAX_STEP = 4;
@@ -41,6 +80,11 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   viewingStep: 1,
   activePanel: "conversation",
 
+  blocks: emptyBlocksMap(),
+  confidenceScore: null,
+  recommendation: null,
+  lastUpdatedBlockType: null,
+
   initialize: (data) => {
     const safeStep = Math.min(Math.max(data.currentStep, 1), MAX_STEP);
     set({
@@ -49,6 +93,10 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       viewingStep: safeStep,
       rawIdea: data.rawIdea,
       status: clampStatus(data.status),
+      blocks: emptyBlocksMap(),
+      confidenceScore: null,
+      recommendation: null,
+      lastUpdatedBlockType: null,
     });
   },
 
@@ -77,4 +125,62 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   },
 
   setActivePanel: (panel) => set({ activePanel: panel }),
+
+  hydrateBlocks: (rows, score, recommendation) => {
+    const blocks = emptyBlocksMap();
+    for (const row of rows) {
+      blocks[row.blockType] = {
+        blockType: row.blockType,
+        content: row.content,
+        evidenceTags: row.evidenceTags,
+        step: row.step,
+        sortOrder: row.sortOrder,
+        updatedAt: row.updatedAt,
+      };
+    }
+    set({ blocks, confidenceScore: score, recommendation });
+  },
+
+  updateBlock: (blockType, content, evidenceTags, step) => {
+    const state = get();
+    const now = Date.now();
+    const mirror: PrdBlockMirror = {
+      blockType,
+      content,
+      evidenceTags,
+      step,
+      sortOrder: BLOCK_SORT_ORDER[blockType],
+      updatedAt: now,
+    };
+
+    const patch: Partial<WizardState> = {
+      blocks: { ...state.blocks, [blockType]: mirror },
+      lastUpdatedBlockType: blockType,
+    };
+
+    let derivedScore: number | null = null;
+    let derivedRecommendation: Recommendation | null = null;
+    if (blockType === "confidence_score") {
+      derivedScore = parseConfidenceScore(content);
+      derivedRecommendation = parseRecommendation(content);
+      patch.confidenceScore = derivedScore;
+      patch.recommendation = derivedRecommendation;
+    }
+
+    set(patch);
+
+    if (blockType === "confidence_score" && state.sessionId) {
+      db.sessions
+        .update(state.sessionId, {
+          confidenceScore: derivedScore ?? undefined,
+          recommendation: derivedRecommendation ?? undefined,
+          updatedAt: now,
+        })
+        .catch((err) => {
+          console.error("[wizard-store] confidence persist failed:", err);
+        });
+    }
+  },
+
+  clearLastUpdated: () => set({ lastUpdatedBlockType: null }),
 }));
