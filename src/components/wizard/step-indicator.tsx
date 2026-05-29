@@ -1,6 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
+import Link from "next/link";
+import { Check, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWizardStore } from "@/stores/wizard-store";
 
@@ -19,8 +20,15 @@ export function StepIndicator() {
   return (
     <nav
       aria-label="Progression du wizard"
-      className="flex items-center justify-center gap-1 sm:gap-2 px-4 py-3 border-b border-border h-[60px] shrink-0"
+      className="relative flex items-center justify-center gap-1 sm:gap-2 px-4 py-3 border-b border-border h-[60px] shrink-0"
     >
+      <Link
+        href="/"
+        aria-label="Retour à l'accueil"
+        className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:outline-none"
+      >
+        <Home className="w-5 h-5" />
+      </Link>
       {STEPS.map((step) => {
         const isCompleted = step.number < currentStep;
         const isCurrent = step.number === currentStep;

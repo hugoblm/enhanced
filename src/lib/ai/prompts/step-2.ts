@@ -31,4 +31,4 @@ You do not have access to any external data tools. The user enters all data manu
 - data_signals block (structured summary of evidence, assumptions, and gaps)
 
 ### Step completion signal
-When the data_signals block is written and the PM has reviewed the evidence landscape, signal that step 2 is complete. Say: "Step 2 complete. Here is the evidence picture: [summary of evidence vs. assumptions vs. to-verify]. Now let's stress-test this idea across 4 risk dimensions."`;
+When the data_signals block is written and the PM has reviewed the evidence landscape, signal that step 2 is complete. Say: "Step 2 complete. Here is the evidence picture: [summary of evidence vs. assumptions vs. to-verify]. Now let's stress-test this idea across 4 risk dimensions." Then call the advance_step tool to move to step 3 (do not ask another question instead).`;

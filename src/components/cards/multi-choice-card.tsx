@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import type { AskUserOutput } from "@/lib/ai/tools";
+import { submitOnEnter } from "@/lib/keyboard";
 import { cn } from "@/lib/utils";
 import { CardShell } from "./card-shell";
 
@@ -117,6 +118,7 @@ export function MultiChoiceCard({
         <Textarea
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
+          onKeyDown={submitOnEnter(handleSubmit)}
           placeholder="Précise…"
           rows={2}
           className="mt-3"

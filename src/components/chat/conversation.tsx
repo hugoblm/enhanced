@@ -29,6 +29,21 @@ import type { AppUIMessage } from "./types";
 
 const MAX_STEP = 4;
 
+// Delay before acting on a detected dead-end. NOT a wait for the model (that is
+// gated by chat.status); it only absorbs the async Dexie refresh of canAdvance
+// when the turn settles, so a completing step is not mistaken for a dead-end.
+const STUCK_DEBOUNCE_MS = 300;
+
+// An ask_user card still awaiting the user (no output yet).
+function hasPendingAskUser(m: AppUIMessage): boolean {
+  return m.parts.some(
+    (p) =>
+      p.type === "tool-ask_user" &&
+      p.state !== "output-available" &&
+      p.state !== "output-error",
+  );
+}
+
 interface UpdatePrdInput {
   block_type: BlockType;
   content: string;
@@ -128,6 +143,9 @@ function ConversationInner({
   );
 
   const addToolOutputRef = useRef<ChatAddToolOutputFunction<AppUIMessage> | null>(null);
+  // Current canAdvance, read inside onToolCall (captured before canAdvance exists,
+  // same TDZ pattern as addToolOutputRef). Kept in sync by the effect below.
+  const canAdvanceRef = useRef(false);
 
   const persistedIds = useRef(new Set(initialMessages.map((m) => m.id)));
 
@@ -136,6 +154,23 @@ function ConversationInner({
     messages: initialMessages,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onToolCall: async ({ toolCall }) => {
+      if (toolCall.toolName === "advance_step") {
+        // Advancing remounts ConversationInner (new viewingStep key) and tears
+        // down this chat, so on the advance path we deliberately do NOT
+        // addToolOutput: the unresolved call is discarded with the chat and no
+        // auto-resend fires (lastAssistantMessageIsCompleteWithToolCalls stays
+        // false). Too early → resolve advanced:false so the model keeps going.
+        if (canAdvanceRef.current) {
+          await useWizardStore.getState().advanceStep();
+        } else {
+          addToolOutputRef.current?.({
+            tool: "advance_step",
+            toolCallId: toolCall.toolCallId,
+            output: { advanced: false },
+          });
+        }
+        return;
+      }
       if (toolCall.toolName !== "update_prd") return;
       const input = toolCall.input as UpdatePrdInput;
       const submit = addToolOutputRef.current;
@@ -188,8 +223,31 @@ function ConversationInner({
     addToolOutputRef.current = chat.addToolOutput;
   }, [chat.addToolOutput]);
 
+  // Dead-end recovery: at most one automatic, invisible nudge per user
+  // interaction; the visible "Continuer" banner is the fallback beyond that.
+  const autoNudgesRef = useRef(0);
+  const [showContinue, setShowContinue] = useState(false);
+
+  const sendNudge = useCallback(() => {
+    setShowContinue(false);
+    chat.sendMessage({
+      text: "Continue. Call the ask_user tool now to ask the next question, or send the step-completion signal if all required blocks for this step are written. Do not answer with text alone.",
+      metadata: { kind: "nudge" },
+    });
+  }, [chat]);
+
+  // Held in a ref so the dead-end effect can depend only on `isStuck` (a boolean)
+  // and never have its debounce timer reset by unrelated re-renders that change
+  // the `sendNudge`/`chat` identity (e.g. during streaming of other state).
+  const sendNudgeRef = useRef(sendNudge);
+  useEffect(() => {
+    sendNudgeRef.current = sendNudge;
+  }, [sendNudge]);
+
   const handleAskUserSubmit = useCallback(
     (toolCallId: string, output: AskUserOutput) => {
+      autoNudgesRef.current = 0;
+      setShowContinue(false);
       chat.addToolOutput({
         tool: "ask_user",
         toolCallId,
@@ -236,6 +294,19 @@ function ConversationInner({
     return required.every((t) => presentBlockTypes.has(t));
   }, [isReadOnly, currentStep, presentBlockTypes]);
 
+  // Whether the current step's required blocks are all written — independent of
+  // canAdvance, which is always false on the final step (nowhere to advance).
+  // The dead-end detector uses this so a *completed* step 4 (legitimate final
+  // turn without ask_user) is not mistaken for a dead-end and nudged.
+  const stepRequirementsMet = useMemo(() => {
+    const required = STEP_REQUIREMENTS[currentStep] ?? [];
+    return required.every((t) => presentBlockTypes.has(t));
+  }, [currentStep, presentBlockTypes]);
+
+  useEffect(() => {
+    canAdvanceRef.current = canAdvance;
+  }, [canAdvance]);
+
   const [isAdvancing, setIsAdvancing] = useState(false);
   const handleAdvance = useCallback(async () => {
     if (isAdvancing) return;
@@ -249,11 +320,45 @@ function ConversationInner({
 
   const handleSubmit = useCallback(
     (text: string) => {
+      autoNudgesRef.current = 0;
+      setShowContinue(false);
       chat.clearError();
       chat.sendMessage({ text });
     },
     [chat],
   );
+
+  // True dead-end: the SDK is idle (status ready, nothing streaming), the last
+  // turn is the assistant's, no card awaits the user, no auto-resend is queued
+  // (the sendAutomaticallyWhen predicate), and the step's required blocks are
+  // not all written (so a completed step — incl. the terminal step 4 — is not
+  // treated as a dead-end).
+  const lastMsg = chat.messages.at(-1);
+  // A card awaits an answer: the free-text bar must be disabled, otherwise a
+  // typed message lands before the ask_user tool_result and the request becomes
+  // an invalid tool_use-without-tool_result sequence (server 500). The user
+  // answers via the card (free text included through its "Autre"/free_text path).
+  const pendingCard = lastMsg?.role === "assistant" && hasPendingAskUser(lastMsg);
+  const isStuck =
+    chat.status === "ready" &&
+    !isReadOnly &&
+    lastMsg?.role === "assistant" &&
+    !hasPendingAskUser(lastMsg) &&
+    !lastAssistantMessageIsCompleteWithToolCalls({ messages: chat.messages }) &&
+    !stepRequirementsMet;
+
+  useEffect(() => {
+    if (!isStuck) return;
+    const timer = setTimeout(() => {
+      if (autoNudgesRef.current < 1) {
+        autoNudgesRef.current += 1;
+        sendNudgeRef.current();
+      } else {
+        setShowContinue(true);
+      }
+    }, STUCK_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [isStuck]);
 
   const isStreaming = chat.status === "streaming" || chat.status === "submitted";
 
@@ -290,12 +395,29 @@ function ConversationInner({
           </div>
         </div>
       )}
+      {isStuck && showContinue && (
+        <div className="border-t border-border bg-accent/30 px-4 py-3">
+          <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              L&apos;assistant n&apos;a pas posé de question. Relance-le ou écris
+              directement ci-dessous.
+            </p>
+            <Button onClick={sendNudge} size="sm" variant="outline">
+              Continuer <ArrowRight size={14} />
+            </Button>
+          </div>
+        </div>
+      )}
       <ChatInput
         onSubmit={handleSubmit}
-        disabled={isReadOnly}
+        disabled={isReadOnly || pendingCard}
         isStreaming={isStreaming}
         placeholder={
-          isReadOnly ? "Étape passée — relecture seule." : "Écris ta réponse…"
+          isReadOnly
+            ? "Étape passée — relecture seule."
+            : pendingCard
+              ? "Réponds à la question ci-dessus."
+              : "Écris ta réponse…"
         }
       />
     </div>
@@ -325,6 +447,8 @@ function uiMessageToRow(
   step: number,
 ): MessageRow | null {
   if (message.role === "system") return null;
+  // Invisible recovery nudge — never persisted (would otherwise reload on hydration).
+  if (message.metadata?.kind === "nudge") return null;
 
   const textParts = message.parts.filter(
     (p): p is { type: "text"; text: string } & AppUIMessage["parts"][number] =>

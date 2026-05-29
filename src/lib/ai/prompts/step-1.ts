@@ -36,4 +36,4 @@ Present the reformulation via a confirmation card. The user can:
 - problem_context block (who, what problem, current workaround, frequency, severity, built up across multiple update_prd calls)
 
 ### Step completion signal
-When both blocks are written and the user has confirmed the reformulation, signal that step 1 is complete. Say: "Step 1 complete. Here is what we established: [brief summary]. Now let's look at the evidence behind these claims."`;
+When both blocks are written and the user has confirmed the reformulation, signal that step 1 is complete. Say: "Step 1 complete. Here is what we established: [brief summary]. Now let's look at the evidence behind these claims." Then call the advance_step tool to move to step 2 (do not ask another question instead).`;

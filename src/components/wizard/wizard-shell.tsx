@@ -45,17 +45,13 @@ export function WizardShell() {
         </TabsList>
         <TabsContent
           value="conversation"
-          className="flex-1 overflow-y-auto m-0"
+          className="flex-1 min-h-0 m-0"
           keepMounted
         >
-          <ConversationPanel />
+          <ConversationPanel className="h-full" />
         </TabsContent>
-        <TabsContent
-          value="prd"
-          className="flex-1 overflow-y-auto m-0"
-          keepMounted
-        >
-          <PrdPanel />
+        <TabsContent value="prd" className="flex-1 min-h-0 m-0" keepMounted>
+          <PrdPanel className="h-full" />
         </TabsContent>
       </Tabs>
     </div>

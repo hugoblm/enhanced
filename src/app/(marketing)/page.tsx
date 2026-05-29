@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { PitchForm } from "@/components/landing/pitch-form";
 
 export const metadata: Metadata = {
@@ -43,37 +42,7 @@ function Header() {
           enhanced.pm
         </span>
       </a>
-      <div className="flex-1" />
-      <a
-        href="#"
-        className="font-ui text-[13px] font-medium text-[#525252] no-underline hidden lg:inline"
-      >
-        Drafts publics
-      </a>
-      <a
-        href="#"
-        className="font-ui text-[13px] font-medium text-[#525252] no-underline hidden lg:inline"
-      >
-        Manifeste
-      </a>
-      <LangToggle />
-      <Button variant="outline" size="sm">
-        Se connecter
-      </Button>
     </header>
-  );
-}
-
-function LangToggle() {
-  return (
-    <div className="hidden items-center rounded-lg bg-secondary p-[3px] lg:inline-flex">
-      <button className="rounded-md bg-white px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.5px] text-foreground shadow-xs">
-        FR
-      </button>
-      <button className="rounded-md bg-transparent px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground">
-        EN
-      </button>
-    </div>
   );
 }
 
