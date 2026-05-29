@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { AskUserOutput } from "@/lib/ai/tools";
+import { submitOnEnter } from "@/lib/keyboard";
 import { CardShell } from "./card-shell";
 
 type Action = "confirmed" | "reformulate" | "clarify";
@@ -83,6 +84,7 @@ export function ConfirmationCard({
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={submitOnEnter(handleSubmitWithText)}
             placeholder={
               action === "reformulate"
                 ? "Reformule à ta façon…"

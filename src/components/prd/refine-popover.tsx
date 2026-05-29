@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useRefineBlock } from "@/hooks/use-refine-block";
+import { submitOnEnter } from "@/lib/keyboard";
 import { BLOCK_HEADINGS } from "@/lib/prd/constants";
 import type { BlockType } from "@/lib/ai/tools";
 
@@ -67,6 +68,7 @@ export function RefinePopover({ blockType, currentContent, step, children }: Pro
         <textarea
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
+          onKeyDown={submitOnEnter(handleSubmit)}
           placeholder="Ex : raccourcis, ajoute une métrique chiffrée, challenge cette hypothèse…"
           aria-label={`Instruction de raffinement pour le bloc ${BLOCK_HEADINGS[blockType]}`}
           maxLength={MAX_INSTRUCTION}

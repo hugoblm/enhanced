@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { AskUserOutput } from "@/lib/ai/tools";
+import { submitOnEnter } from "@/lib/keyboard";
 import { CardShell } from "./card-shell";
 
 type SubmittedOutput = Extract<AskUserOutput, { card_type: "free_text" }>;
@@ -46,6 +47,7 @@ export function FreeTextCard({
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onKeyDown={submitOnEnter(handleSubmit)}
         placeholder={placeholder}
         rows={4}
       />
