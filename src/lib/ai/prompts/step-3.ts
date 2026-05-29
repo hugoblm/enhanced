@@ -62,4 +62,4 @@ After all 4 risks are rated:
 - confidence_score block
 
 ### Step completion signal
-When all 5 blocks are written, present the summary: "Step 3 complete. Global confidence score: [X]/100. Recommendation: [build/test first/abandon]. [1-2 sentence justification]. Let's finalize your PRD."`;
+When all 5 blocks are written, present the summary: "Step 3 complete. Global confidence score: [X]/100. Recommendation: [build/test first/abandon]. [1-2 sentence justification]. Let's finalize your PRD." Then call the advance_step tool to move to step 4 (do not ask another question instead).`;

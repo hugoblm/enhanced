@@ -16,8 +16,9 @@ ConversationPanel (wizard slot)
         ├── hydrates initialMessages from Dexie (where sessionId+step == viewingStep)
         └── ConversationInner (keyed by `${sessionId}-${viewingStep}`)
               ├── useChat with DefaultChatTransport → POST /api/chat
-              ├── onToolCall: writes update_prd to Dexie, calls addToolOutput
+              ├── onToolCall: update_prd → Dexie + addToolOutput; advance_step → advanceStep() (gated by canAdvance)
               ├── onFinish: bulkPuts new messages to Dexie
+              ├── dead-end recovery: detects a settled turn with no pending ask_user → 1 auto-nudge, then a visible "Continuer" banner
               ├── auto-kickoff effect: sends raw idea (step 1) or "Continuons." (steps 2-4)
               ├── presentBlockTypes effect: fetches blocks when status==="ready"
               ├── canAdvance useMemo: derived from required types vs present types
@@ -31,7 +32,7 @@ from the client, assembles the system prompt, streams the LLM response, and retu
 
 ## Tools (`src/lib/ai/tools.ts`)
 
-Both tools are **client-resolved** — neither defines an `execute` function. The server streams the
+All three tools are **client-resolved** — none defines an `execute` function. The server streams the
 tool call as-is; the client handles it and calls `chat.addToolOutput(...)` to feed the result back
 to the model. `sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls` re-fires the
 request once every pending tool call has a result.
@@ -40,9 +41,20 @@ request once every pending tool call has a result.
 |------|-------|--------|------------|
 | `ask_user` | `card_type` + question + options/scale_config/placeholder/confirmation_text | `AskUserOutput` (discriminated union by `card_type`) | UI card → `handleAskUserSubmit` |
 | `update_prd` | `block_type` + `content` + `evidence_tags?` + `confidence?` (required when block_type is `confidence_score`) | `{ written: BlockType }` | `onToolCall` writes Dexie, calls `addToolOutput` |
+| `advance_step` | `{}` (no input) | `{ advanced: boolean }` | `onToolCall`: if `canAdvanceRef` → `advanceStep()` (see note); else `addToolOutput({ advanced: false })` |
 
-Both have explicit `outputSchema`s — without them, the AI SDK v6 infers the `output` type as
+All have explicit `outputSchema`s — without them, the AI SDK v6 infers the `output` type as
 `never` and `addToolOutput` becomes uncallable.
+
+> **`advance_step` does NOT call `addToolOutput` on the advance path.** Advancing changes
+> `currentStep/viewingStep`, which remounts `ConversationInner` (key change) and tears down the
+> chat. Calling `addToolOutput` first would mark the message complete and trigger an
+> `sendAutomaticallyWhen` resend (re-drift) before the remount. So on the advance path we call
+> `advanceStep()` directly and let the remount discard the unresolved call — no resend fires
+> (`lastAssistantMessageIsCompleteWithToolCalls` stays false). Only the "too early" path
+> (`canAdvance` false, e.g. on step 4 where `canAdvance` is always false) resolves with
+> `{ advanced: false }`. Trade-off: the final step-N turn (the one carrying `advance_step`) may not
+> be persisted by `onFinish` if the remount beats it — acceptable (earlier turns are already saved).
 
 ---
 
@@ -54,14 +66,20 @@ Both have explicit `outputSchema`s — without them, the AI SDK v6 infers the `o
 {
   sessionId: string (uuid),
   currentStep: 1..4,
-  rawIdea: string (min 1),
+  rawIdea: string (min 1, max 5000),
   prdBlocks: Array<{
     blockType: BlockType,
     content: string,
     evidenceTagCounts?: { evidence: number, assumption: number, to_verify: number },
   }>,
-  messages: UIMessage[] (max 100),
+  messages: UIMessage[] (max 100, role ∈ {user, assistant} only),
 }
+
+> **Prompt-injection hardening (V1):** the route rejects client-sent `role:"system"` messages
+> (the enum omits `system`) — the only system message is the server-built `buildSystemPrompt`.
+> `rawIdea` is capped server-side at 5000. The BASE_PROMPT also instructs the model to treat all
+> user-provided text as data, never as instructions. Markdown output is rendered through
+> `rehype-sanitize` (no raw HTML, no `dangerouslySetInnerHTML`).
 ```
 
 **System prompt** is assembled per-request by `buildSystemPrompt`
@@ -99,8 +117,7 @@ the user can move on:
 | 4 | `success_criteria`, `kill_criteria`, `next_steps`, `executive_summary` |
 
 `canAdvance` is `true` when every required block for `currentStep` exists in Dexie for the session.
-The "Continuer" banner appears, `handleAdvance` calls `useWizardStore.getState().advanceStep()`,
-which:
+`advanceStep()` (`wizard-store.ts`):
 
 1. Bails if already at step 4.
 2. Persists `db.sessions.update(sessionId, { currentStep: next, updatedAt })` (best-effort —
@@ -110,6 +127,15 @@ which:
 The store change re-renders `Conversation`, the inner remounts via `key="${sessionId}-${viewingStep}"`,
 hydration runs again (empty for the new step), and the auto-kickoff effect sends `"Continuons."` to
 open the next step.
+
+**Two triggers call `advanceStep()`, both gated by `canAdvance`:**
+- **Manual** — the "Continuer" banner (`handleAdvance`), shown whenever `canAdvance` is true.
+- **Model-driven** — the `advance_step` tool. The model calls it after its step-completion message;
+  `onToolCall` runs `advanceStep()` only if `canAdvanceRef` is true (else returns `{ advanced:false }`).
+  This keeps the conversation and the step state in sync: without it, answering a final confirmation
+  card kept the conversation going (model drifting into next-step questions) while `currentStep`
+  stayed put and new blocks were mis-tagged with the old step. `canAdvanceRef` mirrors `canAdvance`
+  for reads inside `onToolCall` (TDZ pattern, like `addToolOutputRef`).
 
 ---
 
@@ -123,11 +149,13 @@ open the next step.
 > - **Breaks if:** server-side DB reads/writes are added → the demo's "no auth, no Supabase"
 >   contract is broken and the trust model (server trusts client) becomes incoherent.
 
-> **Invariant — Both tools are client-resolved**
-> - **What:** Neither `ask_user` nor `update_prd` has an `execute` function. The client must call
->   `chat.addToolOutput` for every tool call (via `handleAskUserSubmit` for cards, via
->   `onToolCall` for update_prd). `sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls`
->   is required for the loop to continue.
+> **Invariant — All tools are client-resolved**
+> - **What:** None of `ask_user` / `update_prd` / `advance_step` has an `execute` function. The
+>   client resolves each (via `handleAskUserSubmit` for cards, via `onToolCall` for update_prd, via
+>   `onToolCall` for advance_step). `sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls`
+>   is required for the loop to continue. **Exception:** `advance_step`'s advance path does not call
+>   `addToolOutput` (it remounts instead — see the Tools note above); every other tool call MUST be
+>   resolved or the loop stalls / the next request hits `AI_MissingToolResultsError`.
 > - **Where:** `src/lib/ai/tools.ts`, `src/components/chat/conversation.tsx`.
 > - **Breaks if:** an `execute` is added → the SDK starts auto-resolving the tool server-side and
 >   the client side resolution path becomes unreachable, breaking the Dexie write path for
@@ -198,6 +226,28 @@ critical to the wizard UX:
 
 Code does not validate either behavior. They are observable in `db.messages` (`toolCalls` count
 per session) and in the PRD panel filling pattern.
+
+### Dead-end recovery (code-enforced safety net)
+
+The end-of-turn discipline ("every turn ends with `ask_user`") is prompted but not guaranteed —
+the model occasionally ends a turn with `update_prd` alone or text-only, which would freeze the
+conversation (no card to answer, `sendAutomaticallyWhen` does not re-fire). `ConversationInner`
+adds a client-side net:
+
+- **Detection (`isStuck`)** uses only authoritative SDK signals, so it is insensitive to model
+  thinking time: `chat.status === "ready"` (no request streaming/submitted) **and** the last
+  message is the assistant's **and** no `ask_user` awaits the user **and**
+  `!lastAssistantMessageIsCompleteWithToolCalls({ messages })` (no auto-resend queued) **and**
+  `!canAdvance` (not a legitimate step end).
+- **Recovery**: a short `STUCK_DEBOUNCE_MS` (~300 ms) timer — present only to outlast the async
+  Dexie refresh of `canAdvance`, NOT to wait for the model — then **one** automatic invisible
+  nudge (`autoNudgesRef`), and beyond that a visible "Continuer" banner. `autoNudgesRef` resets to
+  0 on any real user action (`handleSubmit`, `handleAskUserSubmit`), so the auto-nudge is capped at
+  one per user interaction and cannot loop.
+- **The nudge is a user message tagged `metadata.kind === "nudge"`** (typed in `types.ts`). It is
+  never rendered (`message-bubble.tsx` early-returns) and never persisted (`uiMessageToRow`
+  returns null), so it does not pollute the thread or survive hydration. Its text reaches the
+  model via `convertToModelMessages`; the metadata is ignored server-side.
 
 ---
 
