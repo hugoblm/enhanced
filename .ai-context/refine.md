@@ -42,14 +42,22 @@ forwards it to the model and returns a typed object.
 | `allBlocks` | array of `{ blockType, content, sortOrder }` | Full PRD context for coherence. |
 | `step` | int 1..4 | Used by the client to re-persist the block; round-tripped. |
 
-**Response (2xx):** `{ content: string, evidence_tags: EvidenceTag[] }`. Both validated by an
-`Output.object` schema using the shared `EvidenceTagSchema` from `src/lib/ai/tools.ts`.
+**Response (2xx):** `{ content: string, evidence_tags: EvidenceTag[] }`, taken from the forced
+tool call's `input` and re-validated against `refineResponseSchema` (which reuses the shared
+`EvidenceTagSchema` from `src/lib/ai/tools.ts`).
 
-**Errors:** 400 on Zod failure, 500 on AI provider failure. No 401/429 in V1 (no auth, no
-rate-limit).
+**Errors:** 400 on Zod failure, 500 on AI provider failure or if the model returns no tool
+call. No 401/429 in V1 (no auth, no rate-limit).
 
-**Model:** `conversationModel()` (same as `/api/chat`). Pattern: `generateText({ output:
-Output.object({ schema }) })` (the non-deprecated v6 path; `generateObject` was deprecated).
+**Model:** `conversationModel()` (same as `/api/chat`). Pattern: `generateText` with a single
+tool `submit_refinement` (`tools: { submit_refinement }`), reading `result.toolCalls[…].input`
+and re-validating it. The system prompt instructs the model to call the tool.
+
+> **Do NOT set `toolChoice`.** The configured model (Qwen, thinking mode) returns Alibaba 400
+> `tool_choice ... does not support being set to required or object in thinking mode` if you
+> force the tool. `Output.object` failed the same way (it forces structured output under the
+> hood). Auto tool-choice — the chat route's mechanism — is what works here.
+
 `maxDuration = 60`.
 
 ---
@@ -125,7 +133,7 @@ The doc's tech spec assumes Supabase + auth + versioning + streaming. The shippe
 | Auth check (`auth.getUser`) | not implemented | V1 is anonymous (see `decisions.md`). |
 | `enhanced_anon_id` cookie | not implemented | Same. |
 | Rate limiting (10/min/user) | not implemented | Single-user demo. |
-| Streaming progressive text | not implemented | `Output.object` returns the full object; ~2–4 s wait before the block updates. |
+| Streaming progressive text | not implemented | The forced tool call returns the full object at once; ~2–4 s wait before the block updates. |
 | Conversation panel log | not implemented | Out of V1 scope. |
 | Vitest / Playwright tests | not implemented | Manual smoke is enough for the demo. |
 

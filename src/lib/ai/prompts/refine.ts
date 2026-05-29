@@ -4,6 +4,10 @@ import type { BlockType } from "@/lib/ai/tools";
 
 export const REFINE_SYSTEM_PROMPT = `You refine a single section of a Product Requirements Document based on a natural language instruction. You have access to the full PRD for coherence but you output ONLY the new content and evidence tags of the targeted section.
 
+## Output
+
+You MUST return your result by calling the \`submit_refinement\` tool exactly once, with the rewritten \`content\` and its \`evidence_tags\`. Never answer in plain text.
+
 ## Strict rules
 
 1. **Single section.** Produce only the new content of the targeted section. No introduction, no meta-comment, no recap.
