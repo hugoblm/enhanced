@@ -18,9 +18,13 @@ const PrdBlockSummarySchema = z.object({
     .optional(),
 });
 
+// Only user/assistant turns are accepted from the client. The system prompt is
+// built server-side (buildSystemPrompt) and is the ONLY system message - a
+// client-sent role:"system" would be a prompt-injection vector, so it is
+// rejected at validation rather than forwarded to the model.
 const UIMessageShape = z.looseObject({
   id: z.string(),
-  role: z.enum(["system", "user", "assistant"]),
+  role: z.enum(["user", "assistant"]),
   parts: z.array(z.unknown()),
   metadata: z.unknown().optional(),
 });
@@ -28,7 +32,7 @@ const UIMessageShape = z.looseObject({
 const RequestBodySchema = z.object({
   sessionId: z.uuid(),
   currentStep: z.number().int().min(1).max(4),
-  rawIdea: z.string().min(1),
+  rawIdea: z.string().min(1).max(5000),
   prdBlocks: z.array(PrdBlockSummarySchema),
   messages: z.array(UIMessageShape).max(100),
 });

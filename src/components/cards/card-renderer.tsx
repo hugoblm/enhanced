@@ -100,7 +100,9 @@ export function CardRenderer({ input, isSubmitted, submittedOutput, onSubmit }: 
 function withOtherOption(
   options: AskUserInput["options"],
 ): { id: string; label: string; description?: string }[] {
-  const base = options ?? [];
+  // Drop options whose label has not streamed in yet (or is malformed): the
+  // tool input can render mid-stream, before each option object is complete.
+  const base = (options ?? []).filter((o) => o?.label);
   const hasOther = base.some((o) => {
     if (o.id === OTHER_OPTION_ID) return true;
     if (o.label === OTHER_OPTION_LABEL) return true;

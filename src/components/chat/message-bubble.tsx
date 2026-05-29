@@ -25,6 +25,8 @@ function isAskUserPart(p: AppUIMessagePart): p is AppUIMessagePart & AskUserPart
 
 export function MessageBubble({ message, onAskUserSubmit }: Props) {
   if (message.role === "system") return null;
+  // Invisible auto-continuation nudge — never shown in the thread.
+  if (message.metadata?.kind === "nudge") return null;
 
   const isUser = message.role === "user";
 

@@ -156,7 +156,17 @@ export const updatePrdTool = tool({
   outputSchema: UpdatePrdOutputSchema,
 });
 
+const AdvanceStepOutputSchema = z.object({ advanced: z.boolean() });
+
+export const advanceStepTool = tool({
+  description:
+    "Move the wizard to the next step. Call this right after your step-completion message, once the current step's minimum required blocks are written AND the user has confirmed (where a confirmation applies). The client advances and opens the next step's conversation. If it returns { advanced: false } it is too early: keep working on the current step. Never call this on the final step (step 4).",
+  inputSchema: z.object({}),
+  outputSchema: AdvanceStepOutputSchema,
+});
+
 export const conversationTools = {
   ask_user: askUserTool,
   update_prd: updatePrdTool,
+  advance_step: advanceStepTool,
 };

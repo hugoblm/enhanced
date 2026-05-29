@@ -1,6 +1,6 @@
 "use client";
 
-import { type SyntheticEvent, useRef, useState } from "react";
+import { type KeyboardEvent, type SyntheticEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,13 @@ export function PitchForm() {
     }
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+    }
+  }
+
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} noValidate>
@@ -75,6 +82,7 @@ export function PitchForm() {
             aria-invalid={error ? true : undefined}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onKeyDown={handleKeyDown}
             onChange={(e) => {
               setValue(e.target.value);
               if (error) setError(null);
