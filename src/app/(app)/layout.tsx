@@ -3,5 +3,5 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="h-screen flex flex-col">{children}</div>;
+  return <div className="h-[100dvh] flex flex-col">{children}</div>;
 }

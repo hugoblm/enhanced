@@ -1,9 +1,19 @@
 "use client";
 
-import { type KeyboardEvent, useRef, useState } from "react";
+import { type KeyboardEvent, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+
+// leading-6 (24px/line) + py-2.5 (20px vertical padding) + 2px border.
+// The border counts because the textarea is border-box and scrollHeight
+// excludes the border; without it a 2px scrollbar shows at the line cap.
+// 7 lines on desktop, 5 on mobile, then the textarea scrolls.
+const LINE_HEIGHT = 24;
+const VERTICAL_PADDING = 20;
+const BORDER = 2;
+const heightFor = (lines: number) => lines * LINE_HEIGHT + VERTICAL_PADDING + BORDER;
 
 interface Props {
   onSubmit: (text: string) => void;
@@ -20,6 +30,21 @@ export function ChatInput({
 }: Props) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isWide = useMediaQuery("(min-width: 640px)");
+  const minHeight = heightFor(2); // 2 lines at rest
+  const maxHeight = heightFor(isWide ? 7 : 5);
+
+  // Auto-grow: reset, then clamp the outer height (scrollHeight + border, since
+  // scrollHeight excludes the border on a border-box element) between 2 lines
+  // and maxHeight; beyond that the textarea scrolls internally. Re-runs on
+  // value or viewport breakpoint change.
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const outer = el.scrollHeight + BORDER;
+    el.style.height = `${Math.min(Math.max(outer, minHeight), maxHeight)}px`;
+  }, [value, minHeight, maxHeight]);
 
   const canSend = !disabled && !isStreaming && value.trim().length > 0;
 
@@ -47,10 +72,11 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled || isStreaming}
-          rows={1}
+          rows={2}
+          style={{ maxHeight }}
           aria-label="Message"
           className={cn(
-            "max-h-40 min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-[15px] leading-6 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10",
+            "flex-1 resize-none overflow-y-auto rounded-xl border border-border bg-background px-3 py-2.5 text-[15px] leading-6 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10",
             (disabled || isStreaming) && "opacity-50",
           )}
         />

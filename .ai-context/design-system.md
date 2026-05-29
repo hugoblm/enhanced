@@ -25,8 +25,8 @@ Values are hex, extracted from `DesignSystem/semantic colors/shadcn.tokens.json`
 | `--foreground` | `#0A0A0A` | brand-neutrals/950 |
 | `--card` | `#FFFFFF` | white |
 | `--card-foreground` | `#0A0A0A` | brand-neutrals/950 |
-| `--popover` | `#000000` | black |
-| `--popover-foreground` | `#FFFFFF` | white |
+| `--popover` | `#FFFFFF` | white (aligned on `--card`) |
+| `--popover-foreground` | `#0A0A0A` | brand-neutrals/950 (aligned on `--card-foreground`) |
 | `--primary` | `#171717` | brand-neutrals/900 |
 | `--primary-foreground` | `#FAFAFA` | brand-neutrals/50 |
 | `--secondary` | `#F5F5F5` | brand-neutrals/100 |
@@ -48,8 +48,8 @@ Values are hex, extracted from `DesignSystem/semantic colors/shadcn.tokens.json`
 | `--foreground` | `#FAFAFA` | brand-neutrals/50 |
 | `--card` | `#171717` | brand-neutrals/900 |
 | `--card-foreground` | `#FFFFFF` | white |
-| `--popover` | `#FFFFFF` | white |
-| `--popover-foreground` | `#000000` | black |
+| `--popover` | `#171717` | brand-neutrals/900 (aligned on `--card`) |
+| `--popover-foreground` | `#FFFFFF` | white (aligned on `--card-foreground`) |
 | `--primary` | `#F5F5F5` | brand-neutrals/100 |
 | `--primary-foreground` | `#0A0A0A` | brand-neutrals/950 |
 | `--secondary` | `#262626` | brand-neutrals/800 |
